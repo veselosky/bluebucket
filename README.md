@@ -19,13 +19,6 @@ If new data storage technologies like document stores and column stores contrast
 themselves with traditional patterns using the term *NoSQL*, then Blue Bucket
 could reasonably apply to itself the term *NoCMS.*
 
-I (Vince) put the Blue Bucket Project together to prove out some
-design principles I have developed over the course of my career implementing
-content management systems. The project has two parts which I am developing in
-parallel: the software, and the story of its construction. The whole thing is
-very meta, since I am writing a CMS, and using that CMS to publish the story of
-how I wrote the CMS.
-
 The Blue Bucket Project finds its inspiration at the confluence of the
 philosophies of [open source software][] and the [Indieweb][], the techniques of
 [progressive enhancement][], [static site generation][], and [cloud computing][]
@@ -53,9 +46,13 @@ Here are some down-to-earth principles used in Blue Bucket's design:
 * Generating assets at publish time is almost always better than at request
   time.
 
-This repository is two projects in one. It contains both the software used to
-implement the Blue Bucket publishing system, and the content of web site that
-documents the processes and technologies used to build it.
+I (Vince) put the Blue Bucket Project together to prove out some design
+principles I have developed over the course of my career implementing content
+management systems. The project has two parts which I am developing in parallel:
+the software used to implement the Blue Bucket publishing system, and the
+content of the web site that documents the processes and technologies used to
+build it. Although I'm not in academia, I think of this project as my
+master's thesis.
 
 ## Copyright and License
 

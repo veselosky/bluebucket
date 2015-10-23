@@ -49,11 +49,13 @@ master's thesis.
 ## Contents
 
 * [Goals of the project](p0-goals.html)
-* [High-level architecture](p0-architecture-1.html)
-* [A metadata format for Archetypes](p0-archetypes.html)
+* [Blue Bucket architecture](p0-architecture-1.html)
+* [Content types and metadata attributes](p0-types.html)
 * [Setting up an S3 bucket as a web site](p1-setup-s3.html)
+* A Site Configuration File for Blue Bucket Sites
+* Implement a Scribe for YAML->JSON.
+* Implement a Scribe for Markdown->JSON.
 * Utilities for S3 and Lambda.
-* Implement an Archivist for Markdown files.
 * Implement a Scribe that produces HTML using Jinja2 templates.
 * Introduce the POSH template set and style sheet.
 * Producing a Catalogue of the content.
@@ -61,3 +63,10 @@ master's thesis.
 * Generate an Atom/RSS feed.
 * Generate a category index page.
 
+[Indieweb]: https://en.wikipedia.org/wiki/IndieWeb
+[open source software]: https://en.wikipedia.org/wiki/Open-source_software
+[progressive enhancement]: https://en.wikipedia.org/wiki/Progressive_enhancement
+[REST]: https://en.wikipedia.org/wiki/Representational_state_transfer
+[static site generation]: https://en.wikipedia.org/wiki/Static_web_page
+[systems theory]: https://en.wikipedia.org/wiki/Systems_theory
+[cloud computing]: https://en.wikipedia.org/wiki/Cloud_computing

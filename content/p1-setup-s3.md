@@ -28,13 +28,12 @@ reproducible.
 Next, we'll create a bucket to hold our repository, and since it is also the web
 site, we'll make it public by default.
 
-    $ aws s3api create-bucket --bucket bluebucket.mindvessel.net --acl public-read 
+    $ aws s3api create-bucket --bucket bluebucket.mindvessel.net
     {
     "Location": "/bluebucket.mindvessel.net"
     }
 
-We also have to apply a policy to grant read permissions to the world (why isn't
-this redundant with the --acl?).
+We also have to apply a policy to grant read permissions to the world.
 
     $ cat config/bucket-policy.json
     {
@@ -73,3 +72,49 @@ my website at the subdomain of my own domain:
 
 [create an IAM user]:http://docs.aws.amazon.com/IAM/latest/UserGuide/id_users_create.html#id_users_create_console
 
+## Creating an Execution Role for Lambda
+
+Now that we have a website, we need to make sure we have a role that will allow
+Lambda access to our S3 bucket and other resources it will need.
+
+    $ cat config/lambda-role-trust-policy.json
+    {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Effect": "Allow",
+                "Principal": {
+                    "Service": "lambda.amazonaws.com"
+                },
+                "Action": "sts:AssumeRole"
+            }
+        ]
+    }
+    $ aws iam create-role --role-name BlueBucketS3Agent \
+        --assume-role-policy-document file://config/lambda-role-trust-policy.json
+
+    $ cat config/lambda-role-access-policy.json
+    {
+        "Statement": [
+            {
+                "Action": [
+                    "logs:CreateLogGroup",
+                    "logs:CreateLogStream",
+                    "logs:PutLogEvents"
+                ],
+                "Effect": "Allow",
+                "Resource": "arn:aws:logs:*:*:*"
+            },
+            {
+                "Action": [
+                    "s3:*"
+                ],
+                "Effect": "Allow",
+                "Resource": [
+                    "arn:aws:s3:::bluebucket.mindvessel.net/*"
+                ]
+            }
+        ]
+    }
+    $ aws iam put-role-policy --role-name BlueBucketS3Agent --policy-name BlueBucketS3AgentPolicy \
+        --policy-document file://config/lambda-role-access-policy.json

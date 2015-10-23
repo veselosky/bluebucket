@@ -7,7 +7,7 @@
       "Effect": "Allow", 
       "Principal": "*", 
       "Resource": [
-        "arn:aws:s3:::bluebucket.mindvessel.net/*"
+        "arn:aws:s3:::%(bucket_name)s/*"
       ]
     }
   ]
