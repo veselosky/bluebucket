@@ -1,0 +1,40 @@
+{
+    "LambdaFunctionConfigurations": [
+        {
+            "Events": [
+                "s3:ObjectCreated:*",
+                "s3:ObjectRemoved:*"
+            ],
+            "Filter": {
+                "Key": {
+                    "FilterRules": [
+                        {
+                            "Name": "suffix",
+                            "Value": ".yaml"
+                        }
+                    ]
+                }
+            },
+            "Id": "yamlsource.yaml",
+            "LambdaFunctionArn": "arn:aws:lambda:us-east-1:%(aws_account_id)s:function:yamlsource"
+        },
+        {
+            "Events": [
+                "s3:ObjectCreated:*",
+                "s3:ObjectRemoved:*"
+            ],
+            "Filter": {
+                "Key": {
+                    "FilterRules": [
+                        {
+                            "Name": "suffix",
+                            "Value": ".yml"
+                        }
+                    ]
+                }
+            },
+            "Id": "yamlsource.yml",
+            "LambdaFunctionArn": "arn:aws:lambda:us-east-1:%(aws_account_id)s:function:yamlsource"
+        }
+    ]
+}

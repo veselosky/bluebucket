@@ -1,0 +1,18 @@
+---
+site:
+  title: "The Blue Bucket Project – #NoCMS"
+  author: Vince Veselosky
+  description: A cloud-powered web publishing system.
+  link: http://bluebucket.mindvessel.net/
+  guid: http://bluebucket.mindvessel.net/
+  date: 2015-10-15
+  rights: >
+    Non-software content in The Blue Bucket Project is licensed under a
+    Creative Commons Attribution-ShareAlike 4.0 International License.
+    http://creativecommons.org/licenses/by-sa/4.0/
+
+    Software in the Blue Bucket Project is Licensed under the Apache License,
+    Version 2.0 (the "License"); you may not use it except in compliance with
+    the License. You may obtain a copy of the License at
+    http://www.apache.org/licenses/LICENSE-2.0
+...
