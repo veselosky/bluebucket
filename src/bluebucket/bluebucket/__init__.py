@@ -95,6 +95,16 @@ class Scribe(object):
     #: A reference to the boto3 s3 client. Mock this out for unit tests!
     s3 = boto3.client('s3')
 
+    _siteconfig = None
+    
+    @property
+    def siteconfig(self):
+        """Dictionary of configuration data for your site (from siteconfig.json)"""
+        if not self._siteconfig:
+            cfg = self.s3.get_object(Bucket=self.bucket, Key='siteconfig.json')
+            self._siteconfig = json.load(cfg['Body'])
+        return self._siteconfig
+
     @property
     def logger(self):
         return logging.getLogger(type(self).__name__)

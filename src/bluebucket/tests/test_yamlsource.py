@@ -1,4 +1,4 @@
-from yamlsource import YAMLSource
+from bluebucket.yamlsource import YAMLSource
 
 bucket = "bluebucket.mindvessel.net"
 key = "siteconfig.yml"

@@ -1,4 +1,4 @@
-from markdownsource import MarkdownSource
+from bluebucket.markdownsource import MarkdownSource
 
 import mock
 
