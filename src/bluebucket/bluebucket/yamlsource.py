@@ -16,8 +16,8 @@ class YAMLSource(Scribe):
     target_content_type = 'application/json'
     target_artifact = 'asset'
 
-    def transform(self, body):
-        data = yaml.safe_load(body)
+    def transform(self, iostream):
+        data = yaml.safe_load(iostream)
         # TODO Validate and add metadata
         # YAML tries to be clever and parses dates and times into python objects
         # so we need a datetime-aware encoder. grrr.

@@ -6,6 +6,7 @@ import copy
 import datetime
 import logging
 import mock
+from io import BytesIO
 
 from bluebucket import Scribe
 from dateutil.tz import tzutc
@@ -24,8 +25,8 @@ class ScribeTest(Scribe):
     target_suffix = '.txt'
     s3 = 'to be mocked out by tests'
 
-    def transform(self, body):
-        return body
+    def transform(self, iostream):
+        return iostream.read().decode('utf-8')
 
 
 handle_event = ScribeTest.make_event_handler()
@@ -160,9 +161,10 @@ def test_unknown_event(on_save, on_delete, on_ignore):
 ###############################################################################
 
 # saving for later, will need to mock out several versions
+body_content = b'This is the content body'
 s3get_response = {
     u'AcceptRanges': 'bytes',
-    u'Body': b'This is the content body',
+    u'Body': BytesIO(body_content),
     u'ContentLength': 702,
     u'ContentType': 'application/json',
     u'ETag': '"ad668d6d0dd7cd4fadd7b3dcf92355aa"',
@@ -244,7 +246,7 @@ def test_on_save_artifact_matches():
         Bucket=bucket,
         Key='index.txt',
         ContentType=ScribeTest.target_content_type,
-        Body=response['Body'],
+        Body=body_content.decode('utf-8'),
         Metadata={'artifact': ScribeTest.target_artifact}
     )
     assert mocks3.delete_object.called == False

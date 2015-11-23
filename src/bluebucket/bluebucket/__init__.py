@@ -1,4 +1,19 @@
 # vim: set fileencoding=utf-8 :
+#
+#   Copyright 2015 Vince Veselosky and contributors
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+#
 """
 
 This bluebucket module is a library of functions and classes factored out from
@@ -59,9 +74,9 @@ class Scribe(object):
             target_content_type = 'text/plain'
             target_artifact = 'monograph'
 
-            def transform(self, body):
+            def transform(self, iostream):
                 from utils.html import strip_tags
-                return strip_tags(body)
+                return strip_tags(iostream.read().decode('utf-8'))
 
         handle_event = HTML2Text.make_event_handler()
         # Now register html2text.handle_event as your Lambda function handler
@@ -99,9 +114,9 @@ class Scribe(object):
     
     @property
     def siteconfig(self):
-        """Dictionary of configuration data for your site (from siteconfig.json)"""
+        """Dictionary of configuration data for your site (from _site.json)"""
         if not self._siteconfig:
-            cfg = self.s3.get_object(Bucket=self.bucket, Key='siteconfig.json')
+            cfg = self.s3.get_object(Bucket=self.bucket, Key='_site.json')
             self._siteconfig = json.load(cfg['Body'])
         return self._siteconfig
 
@@ -175,7 +190,7 @@ class Scribe(object):
         """Handles actions when an S3 object is saved.
         
         The default implementation calls `self.transform` to transform the
-        object's body text, then saves the target object back to the bucket.
+        object's body content, then saves the target object back to the bucket.
         Most subclasses will only need to override the `transform` method.
         """
         self.obj = self.s3.get_object(Bucket=self.bucket, Key=self.key)
@@ -199,7 +214,7 @@ class Scribe(object):
             Metadata=metadata
         )
 
-    def transform(self, body):
+    def transform(self, iostream):
         raise NotImplemented
 
     @classmethod

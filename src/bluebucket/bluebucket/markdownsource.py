@@ -28,7 +28,7 @@ extensions=[
     TocExtension(permalink=True),  # replaces headerId
 #    WikiLinkExtension(base_url='', end_url='.html'),
 ]
-# FIXME should get from siteconfig
+# FIXME timezone should come from siteconfig
 zone = pytz.timezone('America/New_York')
 
 
@@ -42,8 +42,8 @@ class MarkdownSource(Scribe):
     md = markdown.Markdown(extensions=extensions, lazy_ol=False,
         output_format='html5')
 
-    def transform(self, body):
-        html = self.md.convert(unicode(body))
+    def transform(self, iostream):
+        html = self.md.convert(iostream.read().decode('utf-8'))
 
         # Side-effect: write html fragment to S3 asset
         basepath, ext = path.splitext(self.key)
@@ -51,6 +51,8 @@ class MarkdownSource(Scribe):
         fragmeta = self.metadata or {}
         fragmeta['artifact'] = 'asset'
 
+        # FIXME Since content is in separate file, need to add content_src to
+        # archetype metadata.
         self.s3.put_object(
             Bucket=self.bucket,
             Key=fragment_file,
