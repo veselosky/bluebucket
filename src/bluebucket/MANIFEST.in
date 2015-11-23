@@ -1,8 +1,8 @@
-include AUTHORS.rst
-include CHANGELOG.rst
-include CONTRIBUTING.rst
 include LICENSE
 include README.rst
+include requirements.txt
+include Makefile
+include tox.ini
 
 recursive-include tests *
 recursive-exclude * __pycache__

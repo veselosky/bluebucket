@@ -1,4 +1,5 @@
 jinja2
+jinja2_s3loader
 markdown
 python-dateutil
 pytz
