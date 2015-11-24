@@ -17,7 +17,7 @@
 """
 Transforms a JSON archetype to a monograph using a Jinja2 template.
 """
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import, print_function, unicode_literals
 
 from jinja2 import Environment
 from jinja2_s3loader import S3loader
@@ -26,18 +26,20 @@ import json
 from bluebucket import Scribe
 
 
+# This probably belongs in a util module.
 def is_sequence(arg):
     return (not hasattr(arg, "strip") and
-            hasattr(arg, "__getitem__") or
-            hasattr(arg, "__iter__"))
+            (hasattr(arg, "__getitem__") or
+            hasattr(arg, "__iter__")))
 
 
 class JSONArchetype(Scribe):
     accepts_artifacts = ['archetype']
     accepts_suffixes = ['.json']
-    target_suffix  = '.html'
+    target_suffix = '.html'
     target_content_type = 'text/html'
     target_artifact = 'monograph'
+    _jinja = None
 
     @property
     def jinja(self):
@@ -47,20 +49,31 @@ class JSONArchetype(Scribe):
         self._jinja = Environment(loader=S3loader(self.bucket, template_dir))
         return self._jinja
 
-    def transform(self, body):
-        context = json.load(body)
+    def transform(self, iostream):
+        context = json.loads(iostream.read().decode('utf-8'))
         context['_site'] = self.siteconfig
-        template = self.get_template()
+        if 'content_src' in context:
+            context['_content'] = self.get_html(context['content_src'])
+        template = self.get_template(context)
         return template.render(context)
 
-    def get_template(self):
-        """Returns a list of potential template names, in order of preference."""
+    def get_html(self, content_src):
+        if 'bucket' in content_src and 'key' in content_src:
+            resp = self.s3.get_object(Bucket=content_src['bucket'],
+                                      Key=content_src['key'])
+            return resp['Body'].read().decode('utf-8')
+        else:
+            # TODO retrieve via href
+            raise Exception('Bucket, key not found, href not yet supported.')
+
+    def get_template(self, context):
+        """Return the correct Jinja2 Template object for this archetype."""
         templates = []
 
-        # Most specific to least specific. Does the archetype request a 
+        # Most specific to least specific. Does the archetype request a
         # custom template? Note that config values may be a list, or a
         # single string.
-        t = self.archetype.get('template', None)
+        t = context.get('template', None)
         if is_sequence(t):
             templates.extend(t)
         elif t:

@@ -24,19 +24,25 @@ from bluebucket.markdownsource import MarkdownSource
 doc = BytesIO(b"""Title: Test Markdown Document
 Date: 2015-11-03
 
-This is a test of the emergency markdown system. If this were an actual 
-markdown, it would be more interesting.
+This is a test of the emergency markdown system.
+If this were an actual markdown,
+it would be more interesting.
 """)
 
-postdoc = u'''<p>This is a test of the emergency markdown system. If this were an actual 
-markdown, it would be more interesting.</p>'''
+postdoc = u'''<p>This is a test of the emergency markdown system.
+If this were an actual markdown,
+it would be more interesting.</p>'''
 
-out = u'{"date": "2015-11-03T00:00:00-05:00", "title": "Test Markdown Document"}'
+out = u'{"content_src": {"bucket": "bluebucket.mindvessel.net", "href": "http://bluebucket.mindvessel.net/index.htm", "key": "index.htm", "type": "text/html"}, "date": "2015-11-03T00:00:00-05:00", "title": "Test Markdown Document"}'  # noqa
+
 
 # Because transform writes an asset as a side-effect, need to mock out the
 # s3 module.
 @mock.patch.object(MarkdownSource, 's3')
 def test_transform(mocks3):
+    # for the siteconfig:
+    mocks3.get_object.return_value = {'Body': BytesIO(b'{}')}
+
     md = MarkdownSource()
     # Normally set by handle_event:
     md.bucket = 'bluebucket.mindvessel.net'
@@ -50,5 +56,5 @@ def test_transform(mocks3):
         Metadata={'artifact': 'asset'},
         ContentType='text/html',
         Bucket='bluebucket.mindvessel.net',
-        )
+    )
 

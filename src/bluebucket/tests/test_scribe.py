@@ -263,4 +263,5 @@ def test_on_save_does_not_match_artifact():
     assert mocks3.delete_object.called == False
     assert mocks3.put_object.called == False
 
+# TODO test siteconfig and timezone properties
 

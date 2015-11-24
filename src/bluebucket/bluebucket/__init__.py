@@ -24,6 +24,7 @@ For fields expecting an artifact, valid artifact values are:
 
 """
 from __future__ import absolute_import, print_function
+from bluebucket.__about__ import *  # noqa
 
 import boto3
 import datetime
