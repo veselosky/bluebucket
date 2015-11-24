@@ -39,7 +39,7 @@ clean-test:
 	rm -fr htmlcov/
 
 coverage:
-	coverage run --source py.test
+	py.test --cov bluebucket
 	coverage report -m
 	coverage html
 	$(BROWSER) htmlcov/index.html
