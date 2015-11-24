@@ -30,6 +30,7 @@ import datetime
 import json
 import logging
 import posixpath as path
+import pytz
 
 from functools import partial
 
@@ -111,18 +112,27 @@ class Scribe(object):
     s3 = boto3.client('s3')
 
     _siteconfig = None
-    
+    _timezone = None
+
     @property
     def siteconfig(self):
         """Dictionary of configuration data for your site (from _site.json)"""
         if not self._siteconfig:
             cfg = self.s3.get_object(Bucket=self.bucket, Key='_site.json')
-            self._siteconfig = json.load(cfg['Body'])
+            self._siteconfig = json.loads(cfg['Body'].read().decode('utf-8'))
         return self._siteconfig
 
     @property
     def logger(self):
         return logging.getLogger(type(self).__name__)
+
+    @property
+    def timezone(self):
+        if self._timezone:
+            return self._timezone
+        zone = self.siteconfig.get('timezone', 'America/New_York')
+        self._timezone = pytz.timezone(zone)
+        return self._timezone
 
     def handle_event(self, event, context):
         """Handles a single event from an event message.
@@ -231,7 +241,7 @@ class Scribe(object):
                 try:
                     return_value = cls().handle_event(ev, context)
                 except Exception as e:
-                    logging.exception("Event crashed: " + repr(ev))
+                    logging.exception("Event crashed: " + repr(e))
             return return_value  # return whatever the last event handler did
 
         return partial(handle_event_with_class, cls)
