@@ -82,11 +82,11 @@ class Scribe(object):
         # Now register html2text.handle_event as your Lambda function handler
     """
 
-    #: List of file name (key) extensions acceptable as input. Override in 
+    #: List of file name (key) extensions acceptable as input. Override in
     #: subclass. Example: ['.yaml', '.yml']
     accepts_suffixes = None
 
-    #: List of directories (key prefixes) acceptable as input. Override in 
+    #: List of directories (key prefixes) acceptable as input. Override in
     #: subclass. Example: ['images/', 'pics/']
     accepts_prefixes = None
 
@@ -133,7 +133,7 @@ class Scribe(object):
         event handling routines: `on_delete`, `on_save`, or `on_ignore`. The
         base Scribe class has default implementations for all three. If your
         scribe implements a simple transform, there is no need for you to
-        override these event handling routines. Simply override the 
+        override these event handling routines. Simply override the
         `transform` method.
 
         """
@@ -148,7 +148,8 @@ class Scribe(object):
         self.key = event['s3']['object']['key']
         basepath, ext = path.splitext(self.key)
         if self.accepts_suffixes and ext not in self.accepts_suffixes:
-            self.logger.warning('%s does not have acceptable suffix, ignoring' % self.key)
+            self.logger.warning(
+                '%s does not have acceptable suffix, ignoring' % self.key)
             return self.on_ignore()
         # TODO filter against accepts_prefixes
 
@@ -159,23 +160,26 @@ class Scribe(object):
             return self.on_delete()
 
         if not event['eventName'].startswith('ObjectCreated:'):
-            self.logger.info('skipping unhandled event type %s' % event['eventName'])
+            self.logger.info('skipping unhandled event type %s'
+                             % event['eventName'])
             return self.on_ignore()
 
         return self.on_save()
 
     def on_delete(self):
-        """Handles actions when an S3 object is deleted (or replaced with 
+        """Handles actions when an S3 object is deleted (or replaced with
         DeleteMarker)."""
         # NOTE: If target does not exist, raises exception. That's cool.
         target = self.s3.get_object(Bucket=self.bucket, Key=self.targetkey)
         try:
             if target['Metadata'].get('artifact', None) != self.target_artifact:
-                self.logger.warning('Target artifact %s of %s does not match' \
+                self.logger.warning(
+                    'Target artifact %s of %s does not match'
                     % (target['Metadata']['artifact'], self.targetkey))
                 return
         except:
-            self.logger.warning('Target artifact (None) of %s does not match' % self.targetkey)
+            self.logger.warning('Target artifact (None) of %s does not match'
+                                % self.targetkey)
             return
 
         self.logger.info('%s deleted, removing %s' % (self.key, self.targetkey))
@@ -188,7 +192,7 @@ class Scribe(object):
 
     def on_save(self):
         """Handles actions when an S3 object is saved.
-        
+
         The default implementation calls `self.transform` to transform the
         object's body content, then saves the target object back to the bucket.
         Most subclasses will only need to override the `transform` method.
@@ -197,7 +201,8 @@ class Scribe(object):
         # test artifact against accepts_artifacts
         source_artifact = self.obj['Metadata'].get('artifact', None)
         if source_artifact not in self.accepts_artifacts:
-            self.logger.warning('Unacceptable input artifact (%s) for %s, skipping' \
+            self.logger.warning(
+                'Unacceptable input artifact (%s) for %s, skipping'
                 % (source_artifact, self.key))
             return
 
