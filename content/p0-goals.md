@@ -5,7 +5,7 @@
 Does the world really need yet another CMS? I think it does.
 
 I was intrigued by and attracted to the web from the very beginning because I
-saw it as a democratizing technology. On the web, a loan individual and a
+saw it as a democratizing technology. On the web, a lone individual and a
 mega-corporation were effectively equal. The platform provided a level playing
 field that allowed the message to stand on its own, to be distributed globally,
 available to all at almost no cost. The average person could not afford to run
@@ -29,6 +29,31 @@ design, can produce a very scalable, very low-cost publishing system. That
 system can be simple enough that it can replace static site generators or
 Wordpress, and scalable enough that it can replace the high-end commercial
 systems used at large media companies.
+
+## Hypothesis
+
+1. Static generation of browser assets at publish time is superior to dynamic
+   generation at request time, in reliability and cost.
+2. Digital infrastructure has reached utility scale. Organizations will save
+   both time and money leveraging cloud services rather than running their own
+   servers and software (like connecting to the grid vs generating your own
+   electricity).
+
+### Classic CMS vs Blue Bucket
+
+Classic CMS at publish time:
+* store content in database
+* index content for future retrieval
+
+at request time:
+* user generates a request
+* request is fielded by a web server
+* web server passes request to app server
+* app server runs a program to produce the requested page
+* the program executes database queries (usually many queries per page)
+* the program combines the data with a template to produce HTML, which is
+  finally returned to the user.
+
 
 ## Phase 1
 
