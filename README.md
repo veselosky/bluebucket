@@ -1,10 +1,10 @@
 # The Blue Bucket Project: #NoCMS
 
-| | 
-| ------------- | ---------------------------------------
-| Title:        | The Blue Bucket Project
-| Description:  | Cloud-powered web publishing system
-| Status:       | Planning — No code available yet.
+| &nbsp; | &nbsp; |
+| ------------- | --------------------------------------- |
+| Title:        | The Blue Bucket Project |
+| Description:  | Cloud-powered web publishing system |
+| Status:       | Pre-alpha — Not to be used in real life |
 
 ![Lolrus says I has a bukkit! Nooo they be stealin mah bukkit!](http://i1.kym-cdn.com/photos/images/original/000/000/026/lolrus.jpg)
 
