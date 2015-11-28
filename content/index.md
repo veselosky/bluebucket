@@ -88,7 +88,7 @@ hypotheses of the Blue Bucket Project:
 * [Content types and metadata attributes](p0-types.html)
 
 ### Methods
-* [Implementation Outline](p0-goals.html)
+* [Implementation Outline](m0-goals.html)
 * [AWS Services](m0-aws.html)
 * [Key Metrics](m0-metrics.html)
 
