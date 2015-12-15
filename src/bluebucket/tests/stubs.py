@@ -17,6 +17,7 @@
 from __future__ import absolute_import, print_function, unicode_literals
 from io import BytesIO
 import datetime
+import mock
 
 from dateutil.tz import tzutc
 
@@ -135,5 +136,17 @@ def generate_event(bucket="bluebucket.mindvessel.net", key="index.html",
     }
 
 
-def archivist():
-    pass
+def fake_scribe(on_save=None, on_delete=None):
+    scribe = mock.Mock()
+    if on_save is not None:
+        if isinstance(on_save, Exception):
+            scribe.on_save.side_effect = on_save
+        else:
+            scribe.on_save.return_value = on_save
+    if on_delete is not None:
+        if isinstance(on_delete, Exception):
+            scribe.on_delete.side_effect = on_delete
+        else:
+            scribe.on_delete.return_value = on_delete
+    return scribe
+

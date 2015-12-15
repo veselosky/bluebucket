@@ -255,7 +255,7 @@ def test_s3object_to_asset_binary(mocks3):
     arch = S3archivist('bluebucket.mindvessel.net')
     bobj = arch.s3object_to_asset(resp)
     assert bobj.content_length == resp['ContentLength']
-    assert bobj.content_type == resp['ContentType']
+    assert bobj.contenttype == resp['ContentType']
     assert bobj.last_modified == resp['LastModified']
     assert bobj.metadata == resp['Metadata']
     assert bobj.artifact == resp['Metadata']['artifact']

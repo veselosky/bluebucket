@@ -20,7 +20,7 @@ import boto3
 import json
 
 
-class S3Asset(object):
+class S3asset(object):
     artifact = None
     bucket = None
     content = None
@@ -39,7 +39,7 @@ class S3Asset(object):
 
     @property
     def text(self):
-        if self.content_type.startswith('text/'):
+        if self.contenttype.startswith('text/'):
             return self.content.decode(self.encoding)
         else:
             raise ValueError("Only text/* MIME types have a text property")
@@ -93,9 +93,9 @@ class S3archivist(object):
         return self.s3.delete_object(Bucket=self.bucket, Key=filename)
 
     def s3object_to_asset(self, s3object, **kwargs):
-        b = S3Asset(**kwargs)
+        b = S3asset(**kwargs)
         b.last_modified = s3object['LastModified']  # boto3 gives a datetime
-        b.content_type = s3object['ContentType']
+        b.contenttype = s3object['ContentType']
         # NOTE reflects compressed size if compressed
         b.content_length = s3object['ContentLength']
         b.metadata = s3object['Metadata']
@@ -105,5 +105,5 @@ class S3archivist(object):
         return b
 
     def new_asset(self, key=None, **kwargs):
-        return S3Asset(bucket=self.bucket, key=key, **kwargs)
+        return S3asset(bucket=self.bucket, key=key, **kwargs)
 

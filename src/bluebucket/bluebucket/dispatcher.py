@@ -21,6 +21,7 @@ import logging
 
 class Dispatcher(object):
     """Receives and dispatches events from the archive."""
+    scribes = None
 
     def __init__(self, siteconfig):
         self.siteconfig = siteconfig
@@ -32,6 +33,17 @@ class Dispatcher(object):
     def get_event_asset(self):
         archivist = self.siteconfig['archivist'](self.bucket)
         return archivist.get(self.key)
+
+    def get_scribes(self):
+        if self.scribes:
+            return self.scribes
+        else:
+            scribes = []
+            archivist = self.siteconfig['archivist'](self.bucket)
+            for scribe in self.siteconfig['scribes']:
+                scribes.append(scribe(siteconfig=self.siteconfig,
+                                      archivist=archivist))
+            return scribes
 
     def handle_event(self, event, context):
         """Handles a single event from an event message.
@@ -71,7 +83,7 @@ class Dispatcher(object):
         """Handles actions when an S3 object is deleted (or replaced with
         DeleteMarker)."""
         assets = []
-        for scribe in self.siteconfig['scribes']:
+        for scribe in self.get_scribes():
             try:
                 assets.extend(scribe.on_delete(self.key))
             except Exception as e:
@@ -83,7 +95,7 @@ class Dispatcher(object):
         """Handles actions when an S3 object is saved."""
         assets = []
         obj = self.get_event_asset()
-        for scribe in self.siteconfig['scribes']:
+        for scribe in self.get_scribes():
             try:
                 assets.extend(scribe.on_save(obj))
             except Exception as e:

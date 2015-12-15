@@ -26,12 +26,15 @@ Of special note:
 from __future__ import absolute_import, print_function
 
 import json
-import markdown
+import posixpath as path
 
-from bluebucket import SmartJSONEncoder, Scribe
+from bluebucket.archivist import S3asset
+from bluebucket.scribe import Scribe
+from bluebucket.util import SmartJSONEncoder
 from dateutil.parser import parse as parse_date
+import markdown
 from markdown.extensions.toc import TocExtension
-from os import path
+import pytz
 
 extensions = [
     'markdown.extensions.extra',
@@ -46,50 +49,57 @@ extensions = [
 class MarkdownSource(Scribe):
     accepts_artifacts = [None, 'source']
     accepts_suffixes = ['.markdown', '.md', '.mdown']
-    target_suffix = '.json'
-    target_content_type = 'application/json'
-    target_artifact = 'archetype'
 
     md = markdown.Markdown(extensions=extensions, lazy_ol=False,
                            output_format='html5')
 
-    def transform(self, iostream):
-        html = self.md.convert(iostream.read().decode('utf-8'))
+    def on_save(self, asset):
+        if not self.can_handle_path(asset.key):
+            return []
 
-        # Side-effect: write html fragment to S3 asset
-        basepath, ext = path.splitext(self.key)
-        fragment_file = basepath + '.htm'
-        fragmeta = self.metadata or {}
-        fragmeta['artifact'] = 'asset'
+        basepath, ext = path.splitext(asset.key)
 
-        self.s3.put_object(
-            Bucket=self.bucket,
-            Key=fragment_file,
-            ContentType='text/html',
-            Body=html,
-            Metadata=fragmeta
-        )
+        html = self.md.convert(asset.text)
+        fragpath = basepath + '.htm'
+        contenttype = 'text/html; charset=utf-8'
+        fragment = self.archivist.new_asset(key=fragpath,
+                                            contenttype=contenttype,
+                                            content=html,
+                                            artifact='curio')
 
 # The metadata needs a lot of clean up, because:
 # 1. meta ext reads everything as a list, but most values should be scalar
 # 2. because humans are sloppy, we parse and normalize date values
         metadata = self.md.Meta
         metadict = {}
+        timezone = self.siteconfig.get('timezone', pytz.utc)
         for key, value in metadata.items():
             if key in ['date', 'published', 'updated']:
-                metadict[key] = self.timezone.localize(parse_date(value[0]))
+                metadict[key] = timezone.localize(parse_date(value[0]))
             else:
                 metadict[key] = value[0] if len(value) == 1 else value
 
         # Since content is in separate file, add content_src to reference it.
-        href = 'http://' + path.join(self.bucket, fragment_file)
-        metadict['content_src'] = {'bucket': self.bucket,
-                                   'key': fragment_file,
+        href = 'http://' + path.join(self.archivist.bucket, fragpath)
+        metadict['content_src'] = {'bucket': self.archivist.bucket,
+                                   'key': fragpath,
                                    'href': href,
-                                   'type': 'text/html',
+                                   'type': 'text/html; charset=utf-8',
                                    }
-        return json.dumps(metadict, cls=SmartJSONEncoder, sort_keys=True)
+        content = json.dumps(metadict, cls=SmartJSONEncoder, sort_keys=True)
+        archetype = S3asset(key=basepath + '.json',
+                            contenttype='application/json',
+                            content=content,
+                            artifact='archetype')
 
+        return [fragment, archetype]
 
-handle_event = MarkdownSource.make_event_handler()
+    def on_delete(self, key):
+        if not self.can_handle_path(key):
+            return []
+
+        basepath, ext = path.splitext(key)
+        html = S3asset(key=basepath + '.htm', deleted=True)
+        arch = S3asset(key=basepath + '.json', deleted=True)
+        return [html, arch]
 

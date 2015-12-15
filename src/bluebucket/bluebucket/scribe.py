@@ -17,7 +17,6 @@
 from __future__ import absolute_import, print_function, unicode_literals
 
 import logging
-import posixpath as path
 
 
 class Scribe(object):
@@ -41,25 +40,21 @@ class Scribe(object):
 
     def can_handle_path(self, key):
         """Return True if this scribe can handle the given input path."""
-        basepath, ext = path.splitext(key)
-
-        if self.accepts_suffixes and ext not in self.accepts_suffixes:
+        if self.accepts_suffixes \
+                and not key.endswith(tuple(self.accepts_suffixes)):
             self.logger.info(
                 '%s does not have acceptable suffix, ignoring' % key)
             return False
 
-        if self.accepts_prefixes:
-            for prefix in self.accepts_prefixes:
-                if basepath.startswith(prefix):
-                    break
-            else:
-                self.logger.info(
-                    '%s does not have acceptable suffix, ignoring' % key)
-                return False
+        if self.accepts_prefixes \
+                and not key.startswith(tuple(self.accepts_prefixes)):
+            self.logger.info(
+                '%s does not have acceptable suffix, ignoring' % key)
+            return False
 
         return True
 
-    def on_delete(self):
+    def on_delete(self, key):
         """Return a list of Assets that should be persisted to the archive.
 
         Normally, the returned assets will have their `deleted` flag set, since
@@ -69,7 +64,7 @@ class Scribe(object):
         """
         raise NotImplementedError
 
-    def on_save(self):
+    def on_save(self, asset):
         """Return a list of Assets that should be persisted to the archive.
 
         Normally, the returned assets will be full content objects, since

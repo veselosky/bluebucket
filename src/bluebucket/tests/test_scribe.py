@@ -13,14 +13,11 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-
-# Test cases for Scribe
 from __future__ import print_function, unicode_literals
 
 
 ###############################################################################
-# Test the handle_event logic that dispatches to the specific event handling
-# methods. This performs checks against the event itself, without any S3 I/O.
+# Test can_handle_path
 ###############################################################################
 
 

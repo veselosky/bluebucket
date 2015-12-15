@@ -37,9 +37,9 @@ def test_non_s3_event():
     ev = evs['Records'][0]
     del(ev['s3'])
     scribe1 = mock.Mock()
-    siteconfig = {"scribes": [scribe1]}
 
-    d = Dispatcher(siteconfig)
+    d = Dispatcher({})
+    d.scribes = [scribe1]
     rval = d.handle_event(ev, {})
     assert rval == []
     scribe1.on_save.assert_not_called()
@@ -52,13 +52,11 @@ def test_non_s3_event():
 def test_on_save():
     evs = stubs.generate_event()
     ev = evs['Records'][0]
-    scribe1 = mock.Mock()
-    scribe1.on_save.return_value = ['scribe1']
-    scribe2 = mock.Mock()
-    scribe2.on_save.return_value = ['scribe2']
-    siteconfig = {"scribes": [scribe1, scribe2]}
+    scribe1 = stubs.fake_scribe(on_save=['scribe1'])
+    scribe2 = stubs.fake_scribe(on_save=['scribe2'])
 
-    d = Dispatcher(siteconfig)
+    d = Dispatcher({})
+    d.scribes = [scribe1, scribe2]
     with mock.patch.object(d, 'get_event_asset') as get_event_asset:
         rval = d.handle_event(ev, {})
     assert rval == ['scribe1', 'scribe2']
@@ -73,13 +71,11 @@ def test_on_save():
 def test_on_delete():
     evs = stubs.generate_event(method='ObjectRemoved:Delete')
     ev = evs['Records'][0]
-    scribe1 = mock.Mock()
-    scribe1.on_delete.return_value = ['scribe1']
-    scribe2 = mock.Mock()
-    scribe2.on_delete.return_value = ['scribe2']
-    siteconfig = {"scribes": [scribe1, scribe2]}
+    scribe1 = stubs.fake_scribe(on_delete=['scribe1'])
+    scribe2 = stubs.fake_scribe(on_delete=['scribe2'])
 
-    d = Dispatcher(siteconfig)
+    d = Dispatcher({})
+    d.scribes = [scribe1, scribe2]
     with mock.patch.object(d, 'get_event_asset') as get_event_asset:
         rval = d.handle_event(ev, {})
     assert rval == ['scribe1', 'scribe2']
@@ -95,15 +91,12 @@ def test_on_delete():
 def test_scribe_raises_exception_on_save():
     evs = stubs.generate_event()
     ev = evs['Records'][0]
-    scribe0 = mock.Mock()
-    scribe0.on_save.return_value = ['scribe0']
-    scribe1 = mock.Mock()
-    scribe1.on_save.side_effect = Exception('FAIL')
-    scribe2 = mock.Mock()
-    scribe2.on_save.return_value = ['scribe2']
-    siteconfig = {"scribes": [scribe0, scribe1, scribe2]}
+    scribe0 = stubs.fake_scribe(on_save=['scribe0'])
+    scribe1 = stubs.fake_scribe(on_save=Exception('FAIL'))
+    scribe2 = stubs.fake_scribe(on_save=['scribe2'])
 
-    d = Dispatcher(siteconfig)
+    d = Dispatcher({})
+    d.scribes = [scribe0, scribe1, scribe2]
     with mock.patch.object(d, 'get_event_asset') as get_event_asset:
         rval = d.handle_event(ev, {})
     assert rval == ['scribe0', 'scribe2']
@@ -120,15 +113,12 @@ def test_scribe_raises_exception_on_save():
 def test_scribe_raises_exception_on_delete():
     evs = stubs.generate_event(method='ObjectRemoved:Delete')
     ev = evs['Records'][0]
-    scribe0 = mock.Mock()
-    scribe0.on_delete.return_value = ['scribe0']
-    scribe1 = mock.Mock()
-    scribe1.on_delete.side_effect = Exception('FAIL')
-    scribe2 = mock.Mock()
-    scribe2.on_delete.return_value = ['scribe2']
-    siteconfig = {"scribes": [scribe0, scribe1, scribe2]}
+    scribe0 = stubs.fake_scribe(on_delete=['scribe0'])
+    scribe1 = stubs.fake_scribe(on_delete=Exception('FAIL'))
+    scribe2 = stubs.fake_scribe(on_delete=['scribe2'])
 
-    d = Dispatcher(siteconfig)
+    d = Dispatcher({})
+    d.scribes = [scribe0, scribe1, scribe2]
     with mock.patch.object(d, 'get_event_asset') as get_event_asset:
         rval = d.handle_event(ev, {})
     assert rval == ['scribe0', 'scribe2']
@@ -136,5 +126,22 @@ def test_scribe_raises_exception_on_delete():
     scribe0.on_delete.assert_called_once_with(mock.ANY)
     scribe1.on_delete.assert_called_once_with(mock.ANY)
     scribe2.on_delete.assert_called_once_with(mock.ANY)
+
+
+def test_get_scribes():
+    siteconfig = {'archivist': mock.Mock(),
+                  'scribes': [mock.Mock(), mock.Mock()]}
+
+    d = Dispatcher(siteconfig)
+    d.bucket = 'test_bucket_1'
+
+    scribes = d.get_scribes()
+
+    assert len(scribes) == 2
+    siteconfig['scribes'][0].assert_called_once_with(siteconfig=siteconfig,
+                                                     archivist=mock.ANY)
+    siteconfig['scribes'][1].assert_called_once_with(siteconfig=siteconfig,
+                                                     archivist=mock.ANY)
+    siteconfig['archivist'].assert_called_with('test_bucket_1')
 
 
