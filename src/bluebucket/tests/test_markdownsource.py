@@ -46,9 +46,8 @@ out = u'{"content_src": {"bucket": "bluebucket.mindvessel.net", "href": "http://
 # And the second asset has a key ending in .json
 # And the second asset has correct json
 # And the second asset has artifact of "archetype"
-@mock.patch.object(S3archivist, 's3')
-def test_transform_on_save(mocks3):
-    archivist = S3archivist('bluebucket.mindvessel.net')
+def test_transform_on_save():
+    archivist = S3archivist('bluebucket.mindvessel.net', s3=mock.Mock())
     md = MarkdownSource(archivist=archivist, siteconfig={'timezone': pytz.utc})
     asset = S3asset(key='index.md',
                     contenttype='text/markdown',
@@ -73,9 +72,8 @@ def test_transform_on_save(mocks3):
 # Given an asset representing a non-markdown file
 # When on_save(asset) is called
 # Then on_save returns an empty list
-@mock.patch.object(S3archivist, 's3')
-def test_on_save_cannot_handle(mocks3):
-    archivist = S3archivist('testbucket1')
+def test_on_save_cannot_handle():
+    archivist = S3archivist('bluebucket.mindvessel.net', s3=mock.Mock())
     md = MarkdownSource(archivist=archivist)
     asset = S3asset(key='index.txt',
                     contenttype='text/plain',
@@ -93,9 +91,8 @@ def test_on_save_cannot_handle(mocks3):
 # And the first asset has deleted flag set
 # And the second asset has a key ending in .json
 # And the second asset has deleted flag set
-@mock.patch.object(S3archivist, 's3')
-def test_on_delete(mocks3):
-    archivist = S3archivist('testbucket1')
+def test_on_delete():
+    archivist = S3archivist('bluebucket.mindvessel.net', s3=mock.Mock())
     md = MarkdownSource(archivist=archivist)
 
     rval = md.on_delete('index.markdown')
@@ -112,9 +109,8 @@ def test_on_delete(mocks3):
 # Given a key representing a non-markdown file
 # When on_delete(key) is called
 # Then on_delete returns an empty list
-@mock.patch.object(S3archivist, 's3')
-def test_on_delete_cannot_handle(mocks3):
-    archivist = S3archivist('testbucket1')
+def test_on_delete_cannot_handle():
+    archivist = S3archivist('bluebucket.mindvessel.net', s3=mock.Mock())
     md = MarkdownSource(archivist=archivist)
 
     rval = md.on_delete('index.htm')

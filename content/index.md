@@ -82,7 +82,7 @@ hypotheses of the Blue Bucket Project:
 * [Jobs of an Integrated CMS]()
 * [Static Site Generators]()
 * [Design of a Static CMS]()
-* [Design of a Typical Dynamic CMS]()
+* [Design of a Typical Dynamic CMS](a0-dynamic-cms.html)
 * [Common Modifications to the Dynamic Model for Scalability and Reliability]()
 * [Blue Bucket architecture](p0-architecture-1.html)
 * [Content types and metadata attributes](p0-types.html)

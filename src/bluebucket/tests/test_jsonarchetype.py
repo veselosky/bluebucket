@@ -44,6 +44,20 @@ archetype = b'''{
 # NOTE To test anything but the jinja property, mock out the jinja property.
 #############################################################################
 
+# How we create the jinja. Because it needs a loader that accesses the archive
+# directly, it should be tied to the archivist.
+class Nope:
+    @property
+    def jinja(self):
+        from jinja2 import Environment
+        from jinja2_s3loader import S3loader
+        if self._jinja:
+            return self._jinja
+        template_dir = self.siteconfig.get('template_dir', '_templates')
+        self._jinja = Environment(loader=S3loader(self.bucket, template_dir))
+        return self._jinja
+
+
 #############################################################################
 # Test get_template
 #############################################################################
@@ -51,19 +65,12 @@ archetype = b'''{
 # And an archetype with no custom template
 # When I call get_template
 # Then the fallback template is selected
-@mock.patch.object(JSONArchetype, 's3')
-@mock.patch.object(JSONArchetype, 'jinja')
-def test_get_template_no_default_no_custom(mockjinja, mocks3):
-    mockjinja.select_template.return_value = Template('')
-    empty_siteconfig = b'{}'
-    mocks3.get_object.return_value = {"Body": BytesIO(empty_siteconfig)}
-    cut = JSONArchetype()
-    cut.bucket = "test-bucket"
-    cut.key = "test-key"
-    template = cut.get_template({})
+def test_get_template_no_default_no_custom():
+    scribe = JSONArchetype(siteconfig={}, jinja=mock.Mock())
+    template = scribe.get_template({})
     assert type(template) == Template
     tlist = ["page.html"]
-    mockjinja.select_template.assert_called_with(tlist)
+    scribe.jinja.select_template.assert_called_with(tlist)
 
 
 # Given a siteconfig with a single default_template

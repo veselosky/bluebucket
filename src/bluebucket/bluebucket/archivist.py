@@ -50,13 +50,10 @@ class S3asset(object):
 
 
 class S3archivist(object):
-    s3 = None
-    bucket = None
 
-    def __init__(self, bucket):
+    def __init__(self, bucket, **kwargs):
         self.bucket = bucket
-        if self.s3 is None:  # tests will mock.patch it, let them
-            self.s3 = boto3.client('s3')
+        self.s3 = kwargs.get('s3', boto3.client('s3'))
 
     def get(self, filename):
         return self.s3object_to_asset(self.s3.get_object(Bucket=self.bucket,

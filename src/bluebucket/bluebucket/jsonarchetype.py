@@ -19,11 +19,7 @@ Transforms a JSON archetype to a monograph using a Jinja2 template.
 """
 from __future__ import absolute_import, print_function, unicode_literals
 
-from jinja2 import Environment
-from jinja2_s3loader import S3loader
-import json
-
-from bluebucket import Scribe
+from bluebucket.scribe import Scribe
 
 
 # This probably belongs in a util module.
@@ -34,23 +30,22 @@ def is_sequence(arg):
 
 
 class JSONArchetype(Scribe):
-    accepts_artifacts = ['archetype']
-    accepts_suffixes = ['.json']
-    target_suffix = '.html'
-    target_content_type = 'text/html'
-    target_artifact = 'monograph'
-    _jinja = None
 
-    @property
-    def jinja(self):
-        if self._jinja:
-            return self._jinja
-        template_dir = self.siteconfig.get('template_dir', '_templates')
-        self._jinja = Environment(loader=S3loader(self.bucket, template_dir))
-        return self._jinja
+    def __init__(self, **kwargs):
+        self.jinja = kwargs.get('jinja')
+        self.archivist = kwargs.get('archivist')
+        self.siteconfig = kwargs.get('siteconfig', {})
 
-    def transform(self, iostream):
-        context = json.loads(iostream.read().decode('utf-8'))
+        self.accepts_artifacts = ('archetype', )
+        self.accepts_suffixes = ('.json', )
+        self.target_suffix = '.html'
+        self.target_content_type = 'text/html'
+        self.target_artifact = 'monograph'
+
+    def on_save(self, asset):
+        if not self.can_handle_path(asset.key):
+            return []
+        context = asset.json
         context['_site'] = self.siteconfig
         if 'content_src' in context:
             context['_content'] = self.get_html(context['content_src'])
@@ -58,13 +53,14 @@ class JSONArchetype(Scribe):
         return template.render(context)
 
     def get_html(self, content_src):
-        if 'bucket' in content_src and 'key' in content_src:
-            resp = self.s3.get_object(Bucket=content_src['bucket'],
-                                      Key=content_src['key'])
-            return resp['Body'].read().decode('utf-8')
+        if 'key' in content_src:
+            resp = self.archivist.get(content_src['key'])
+            return resp.text
+        elif 'href' in content_src:
+            raise Exception('HTTP get via href not yet supported.')
         else:
             # TODO retrieve via href
-            raise Exception('Bucket, key not found, href not yet supported.')
+            raise Exception('Unable to resolve content_src reference.')
 
     def get_template(self, context):
         """Return the correct Jinja2 Template object for this archetype."""

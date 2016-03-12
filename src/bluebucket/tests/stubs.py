@@ -150,3 +150,15 @@ def fake_scribe(on_save=None, on_delete=None):
             scribe.on_delete.return_value = on_delete
     return scribe
 
+
+def fake_archivist(get=None):
+    arch = mock.Mock()
+    if get is None:
+        arch.mock.get.return_value = s3get_response_text_utf8()
+    elif isinstance(get, Exception):
+        arch.mock.get.side_effect = get
+    else:
+        arch.mock.get.return_value = get
+
+    return arch
+

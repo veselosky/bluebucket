@@ -30,12 +30,12 @@ json_body = '{"testkey": "testvalue"}'
 # When on_save is called
 # Then on_save returns list containing an asset with JSON content
 # And asset.key has a .json extension
-@mock.patch.object(S3archivist, 's3')
-def test_transform_on_save(mocks3):
+def test_transform_on_save():
+    archivist = S3archivist('bluebucket.mindvessel.net', s3=mock.Mock())
     asset = S3asset(content=yaml_body,
                     contenttype='application/yaml',
                     key='name.yml')
-    ys = YAMLSource(archivist=S3archivist('testbucket1'))
+    ys = YAMLSource(archivist=archivist)
     rval = ys.on_save(asset)
     assert len(rval) == 1
     assert rval[0].content == json_body
@@ -45,12 +45,12 @@ def test_transform_on_save(mocks3):
 # Given an asset with a .json extension
 # When on_save is called
 # Then on_save returns an empty list
-@mock.patch.object(S3archivist, 's3')
-def test_on_save_cannot_handle(mocks3):
+def test_on_save_cannot_handle():
+    archivist = S3archivist('bluebucket.mindvessel.net', s3=mock.Mock())
     asset = S3asset(content=yaml_body,
                     contenttype='application/yaml',
                     key='name.json')
-    ys = YAMLSource(archivist=S3archivist('testbucket1'))
+    ys = YAMLSource(archivist=archivist)
     rval = ys.on_save(asset)
     assert len(rval) == 0
 
@@ -59,9 +59,9 @@ def test_on_save_cannot_handle(mocks3):
 # When on_delete(key) is called
 # Then on_delete returns an asset with extension .json
 # And asset.deleted is True
-@mock.patch.object(S3archivist, 's3')
-def test_on_delete(mocks3):
-    ys = YAMLSource(archivist=S3archivist('testbucket1'))
+def test_on_delete():
+    archivist = S3archivist('bluebucket.mindvessel.net', s3=mock.Mock())
+    ys = YAMLSource(archivist=archivist)
     rval = ys.on_delete('testdir/name.yaml')
     assert len(rval) == 1
     assert rval[0].deleted
@@ -71,9 +71,9 @@ def test_on_delete(mocks3):
 # Given a key with a .json extension
 # When on_delete is called
 # Then on_delete returns an empty list
-@mock.patch.object(S3archivist, 's3')
-def test_on_delete_cannot_handle(mocks3):
-    ys = YAMLSource(archivist=S3archivist('testbucket1'))
+def test_on_delete_cannot_handle():
+    archivist = S3archivist('bluebucket.mindvessel.net', s3=mock.Mock())
+    ys = YAMLSource(archivist=archivist)
     rval = ys.on_delete('any/name.json')
     assert len(rval) == 0
 

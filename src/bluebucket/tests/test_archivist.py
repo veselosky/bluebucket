@@ -39,9 +39,8 @@ contenttype = 'text/plain; charset=utf-8'
 # When I call archivist.new_asset()
 # A new asset is returned
 # and the asset has a bucket attribute with the same value as the archivist
-@mock.patch.object(S3archivist, 's3')
-def test_new_asset(mocks3):
-    arch = S3archivist('bluebucket.mindvessel.net')
+def test_new_asset():
+    arch = S3archivist('bluebucket.mindvessel.net', s3=mock.Mock())
     asset = arch.new_asset()
     assert asset.bucket == arch.bucket
 
@@ -51,9 +50,8 @@ def test_new_asset(mocks3):
 # A new asset is returned
 # and the asset's bucket attribute has the same value as the archivist's
 # and the asset's key attribute is set with the argument
-@mock.patch.object(S3archivist, 's3')
-def test_new_asset_with_key(mocks3):
-    arch = S3archivist('bluebucket.mindvessel.net')
+def test_new_asset_with_key():
+    arch = S3archivist('bluebucket.mindvessel.net', s3=mock.Mock())
     asset = arch.new_asset('test.key')
     assert asset.bucket == arch.bucket
     assert asset.key == 'test.key'
@@ -63,9 +61,8 @@ def test_new_asset_with_key(mocks3):
 # When I call archivist.new_asset(key, **kwargs)
 # A new asset is returned
 # and the asset's attributes have been set by the kwargs
-@mock.patch.object(S3archivist, 's3')
-def test_new_asset_with_kwargs(mocks3):
-    arch = S3archivist('bluebucket.mindvessel.net')
+def test_new_asset_with_kwargs():
+    arch = S3archivist('bluebucket.mindvessel.net', s3=mock.Mock())
     asset = arch.new_asset('test.key', deleted=True)
     assert asset.bucket == arch.bucket
 
@@ -78,12 +75,12 @@ def test_new_asset_with_kwargs(mocks3):
 # When get() is called with a filename
 # Then archivist calls s3.get_object with correct params
 # Should we support conditional GET with If-None-Match, If-Modified-Since?
-@mock.patch.object(S3archivist, 's3')
-def test_get_by_key(mocks3):
-    arch = S3archivist('bluebucket.mindvessel.net')
+def test_get_by_key():
+    arch = S3archivist('bluebucket.mindvessel.net', s3=mock.Mock())
+    arch.s3.get_object.return_value = stubs.s3get_response_text_utf8()
     arch.get('filename.txt')
 
-    mocks3.get_object.assert_called_with(
+    arch.s3.get_object.assert_called_with(
         Key='filename.txt',
         Bucket='bluebucket.mindvessel.net',
     )
@@ -92,9 +89,8 @@ def test_get_by_key(mocks3):
 # Given a bucket
 # When get() is called without a filename
 # Then archivist raises TypeError
-@mock.patch.object(S3archivist, 's3')
-def test_get_no_filename(mocks3):
-    arch = S3archivist('bluebucket.mindvessel.net')
+def test_get_no_filename():
+    arch = S3archivist('bluebucket.mindvessel.net', s3=mock.Mock())
     with pytest.raises(TypeError):
         arch.get()
 
@@ -109,12 +105,11 @@ def test_get_no_filename(mocks3):
 # According to the docs, AMZ does not support If-Match conditions
 # on delete, so other args are ignored.
 # https://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectDELETE.html
-@mock.patch.object(S3archivist, 's3')
-def test_delete_by_key(mocks3):
-    arch = S3archivist('bluebucket.mindvessel.net')
+def test_delete_by_key():
+    arch = S3archivist('bluebucket.mindvessel.net', s3=mock.Mock())
     arch.delete('filename.txt')
 
-    mocks3.delete_object.assert_called_with(
+    arch.s3.delete_object.assert_called_with(
         Key='filename.txt',
         Bucket='bluebucket.mindvessel.net',
     )
@@ -123,9 +118,8 @@ def test_delete_by_key(mocks3):
 # Given a bucket
 # When delete() is called without a filename
 # Then archivist raises TypeError
-@mock.patch.object(S3archivist, 's3')
-def test_delete_no_filename(mocks3):
-    arch = S3archivist('bluebucket.mindvessel.net')
+def test_delete_no_filename():
+    arch = S3archivist('bluebucket.mindvessel.net', s3=mock.Mock())
     with pytest.raises(TypeError):
         arch.delete()
 
@@ -137,9 +131,8 @@ def test_delete_no_filename(mocks3):
 # Given a bucket
 # When save() is called with all required params
 # Then archivist calls s3.put_object with correct params
-@mock.patch.object(S3archivist, 's3')
-def test_save_success(mocks3):
-    arch = S3archivist('bluebucket.mindvessel.net')
+def test_save_success():
+    arch = S3archivist('bluebucket.mindvessel.net', s3=mock.Mock())
     asset = arch.new_asset('filename.txt',
                            content='contents',
                            contenttype=contenttype,
@@ -147,7 +140,7 @@ def test_save_success(mocks3):
                            )
     arch.save(asset)
 
-    mocks3.put_object.assert_called_with(
+    arch.s3.put_object.assert_called_with(
         Key='filename.txt',
         Body='contents',
         Metadata={"artifact": "source"},
@@ -159,10 +152,9 @@ def test_save_success(mocks3):
 # Given a bucket
 # When save() is called with metadata
 # Then archivist calls s3.put_object with correct params
-@mock.patch.object(S3archivist, 's3')
-def test_save_with_metadata(mocks3):
+def test_save_with_metadata():
     meta = {"stuff": "things"}
-    arch = S3archivist('bluebucket.mindvessel.net')
+    arch = S3archivist('bluebucket.mindvessel.net', s3=mock.Mock())
     asset = arch.new_asset('filename.txt',
                            content='contents',
                            contenttype=contenttype,
@@ -171,7 +163,7 @@ def test_save_with_metadata(mocks3):
                            )
     arch.save(asset)
 
-    mocks3.put_object.assert_called_with(
+    arch.s3.put_object.assert_called_with(
         Key='filename.txt',
         Body='contents',
         Metadata={"stuff": "things", "artifact": "source"},
@@ -183,13 +175,12 @@ def test_save_with_metadata(mocks3):
 # Given a bucket
 # When save() is called with a deleted asset
 # Then archivist calls s3.delete_object with correct params
-@mock.patch.object(S3archivist, 's3')
-def test_save_deleted(mocks3):
-    arch = S3archivist('bluebucket.mindvessel.net')
+def test_save_deleted():
+    arch = S3archivist('bluebucket.mindvessel.net', s3=mock.Mock())
     asset = arch.new_asset('filename.txt', deleted=True)
     arch.save(asset)
 
-    mocks3.delete_object.assert_called_with(
+    arch.s3.delete_object.assert_called_with(
         Key='filename.txt',
         Bucket='bluebucket.mindvessel.net',
     )
@@ -198,9 +189,8 @@ def test_save_deleted(mocks3):
 # Given a bucket
 # When save() is called without "contenttype"
 # Then archivist raises TypeError
-@mock.patch.object(S3archivist, 's3')
-def test_save_no_contenttype(mocks3):
-    arch = S3archivist('bluebucket.mindvessel.net')
+def test_save_no_contenttype():
+    arch = S3archivist('bluebucket.mindvessel.net', s3=mock.Mock())
     asset = arch.new_asset('filename.txt',
                            content='contents',
                            artifact='source',
@@ -213,9 +203,8 @@ def test_save_no_contenttype(mocks3):
 # Given a bucket
 # When save() is called without "content"
 # Then archivist raises TypeError
-@mock.patch.object(S3archivist, 's3')
-def test_save_no_content(mocks3):
-    arch = S3archivist('bluebucket.mindvessel.net')
+def test_save_no_content():
+    arch = S3archivist('bluebucket.mindvessel.net', s3=mock.Mock())
     asset = arch.new_asset('filename.txt',
                            contenttype=contenttype,
                            artifact='source',
@@ -228,9 +217,8 @@ def test_save_no_content(mocks3):
 # Given a bucket
 # When save() is called without "key"
 # Then archivist raises TypeError
-@mock.patch.object(S3archivist, 's3')
-def test_save_no_filename(mocks3):
-    arch = S3archivist('bluebucket.mindvessel.net')
+def test_save_no_filename():
+    arch = S3archivist('bluebucket.mindvessel.net', s3=mock.Mock())
     asset = arch.new_asset(content='contents',
                            contenttype=contenttype,
                            artifact='source',
@@ -249,10 +237,9 @@ def test_save_no_filename(mocks3):
 # Later if we choose to support a streaming response for better performance of
 # large objects, we'll add a get_stream method that returns a StreamingAsset.
 
-@mock.patch.object(S3archivist, 's3')
-def test_s3object_to_asset_binary(mocks3):
+def test_s3object_to_asset_binary():
     resp = stubs.s3get_response_binary()
-    arch = S3archivist('bluebucket.mindvessel.net')
+    arch = S3archivist('bluebucket.mindvessel.net', s3=mock.Mock())
     bobj = arch.s3object_to_asset(resp)
     assert bobj.content_length == resp['ContentLength']
     assert bobj.contenttype == resp['ContentType']
@@ -262,18 +249,16 @@ def test_s3object_to_asset_binary(mocks3):
     assert bobj.content == stubs.binary_content
 
 
-@mock.patch.object(S3archivist, 's3')
-def test_s3object_to_asset_binary_has_no_text(mocks3):
-    arch = S3archivist('bluebucket.mindvessel.net')
+def test_s3object_to_asset_binary_has_no_text():
+    arch = S3archivist('bluebucket.mindvessel.net', s3=mock.Mock())
     bobj = arch.s3object_to_asset(stubs.s3get_response_binary())
     assert bobj.content == stubs.binary_content
     with pytest.raises(ValueError):
         assert bobj.text == stubs.binary_content
 
 
-@mock.patch.object(S3archivist, 's3')
-def test_s3object_to_asset_binary_has_no_json(mocks3):
-    arch = S3archivist('bluebucket.mindvessel.net')
+def test_s3object_to_asset_binary_has_no_json():
+    arch = S3archivist('bluebucket.mindvessel.net', s3=mock.Mock())
     bobj = arch.s3object_to_asset(stubs.s3get_response_binary())
     assert bobj.content == stubs.binary_content
     with pytest.raises(ValueError):
@@ -282,9 +267,8 @@ def test_s3object_to_asset_binary_has_no_json(mocks3):
 
 # If the content type matches text/*, the text property will contain the decoded
 # unicode text. The content property still contains raw bytes.
-@mock.patch.object(S3archivist, 's3')
-def test_s3object_to_asset_text(mocks3):
-    arch = S3archivist('bluebucket.mindvessel.net')
+def test_s3object_to_asset_text():
+    arch = S3archivist('bluebucket.mindvessel.net', s3=mock.Mock())
     bobj = arch.s3object_to_asset(stubs.s3get_response_text_utf8())
     assert bobj.content == stubs.text_content.encode('utf-8')
     assert bobj.text == stubs.text_content
@@ -292,9 +276,8 @@ def test_s3object_to_asset_text(mocks3):
 
 # If the content type is application/json, the json property should contain the
 # parsed data structure.
-@mock.patch.object(S3archivist, 's3')
-def test_s3object_to_asset_json(mocks3):
-    arch = S3archivist('bluebucket.mindvessel.net')
+def test_s3object_to_asset_json():
+    arch = S3archivist('bluebucket.mindvessel.net', s3=mock.Mock())
     bobj = arch.s3object_to_asset(stubs.s3get_response_json())
     assert bobj.content == stubs.json_content
     assert bobj.json == json.loads(stubs.json_content)
