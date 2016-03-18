@@ -14,6 +14,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 #
+from __future__ import absolute_import, print_function, unicode_literals
 from io import BytesIO
 from gzip import GzipFile
 
@@ -49,9 +50,16 @@ def gzip(content, filename=None, compresslevel=9, mtime=None):
     gz = GzipFile(filename, 'wb', compresslevel, gzbuffer, mtime)
     gz.write(content)
     gz.close()
-    return gzbuffer.read()
+    return gzbuffer.getvalue()
 
 
 def gunzip(gzcontent):
     gzbuffer = BytesIO(gzcontent)
     return GzipFile(None, 'rb', fileobj=gzbuffer).read()
+
+
+def is_sequence(arg):
+    return (not hasattr(arg, "strip") and
+            (hasattr(arg, "__getitem__") or
+            hasattr(arg, "__iter__")))
+
