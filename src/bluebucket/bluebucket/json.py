@@ -49,6 +49,8 @@ def get_template(archivist, context):
 
 
 def on_save(archivist, asset):
+    if not asset.artifact == 'archetype':
+        return []
     basepath, ext = path.splitext(asset.key)
     context = asset.data
     context['_site'] = archivist.siteconfig
