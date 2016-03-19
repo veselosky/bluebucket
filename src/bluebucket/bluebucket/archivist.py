@@ -15,27 +15,44 @@
 #   limitations under the License.
 #
 from __future__ import absolute_import, print_function, unicode_literals
-import json
 import boto3
-from bluebucket.util import SmartJSONEncoder
+import json
+import re
+from bluebucket.util import SmartJSONEncoder, gunzip, gzip
 
 
 class S3asset(object):
-    artifact = None
-    bucket = None
-    content = None
-    contenttype = None
-    deleted = False
-    encoding = 'utf-8'
-    key = None
-    last_modified = None
-    metadata = None
-
     def __init__(self, **kwargs):
+        self.artifact = None
+        self.bucket = None
+        self.content = None
+        self.contenttype = None
+        self.contentencoding = None
+        self.deleted = False
+        self.encoding = 'utf-8'
+        self.key = None
+        self.last_modified = None
+        self.metadata = {}
+        self.use_compression = True
+
         for key in kwargs:
             setattr(self, key, kwargs[key])
-        if self.metadata is None:
-            self.metadata = {}
+
+    @classmethod
+    def from_s3object(cls, obj, **kwargs):
+        b = cls(**kwargs)
+        b.last_modified = obj['LastModified']  # boto3 gives a datetime
+        b.contenttype = obj['ContentType']
+        # NOTE reflects compressed size if compressed
+        b.content_length = obj['ContentLength']
+        b.metadata = obj['Metadata']
+        b.artifact = obj['Metadata']['artifact']
+        if 'ContentEncoding' in obj and obj['ContentEncoding'] == 'gzip':
+            b.contentencoding = obj['ContentEncoding']
+            b.content = gunzip(obj['Body'].read())
+        else:
+            b.content = obj['Body'].read()
+        return b
 
     @property
     def text(self):
@@ -46,7 +63,7 @@ class S3asset(object):
 
     @text.setter
     def text(self, newtext):
-        self.content = newtext.decode(self.encoding)
+        self.content = newtext.encode(self.encoding)
 
     @property
     def data(self):
@@ -56,6 +73,24 @@ class S3asset(object):
     def data(self, newdata):
         # dumper only outputs ascii chars, so this should be safe
         self.content = json.dumps(newdata, cls=SmartJSONEncoder)
+
+    def as_s3object(self, bucket=None):
+        s3obj = dict(
+            Bucket=bucket or self.bucket,
+            Key=self.key,
+            ContentType=self.contenttype,
+            Metadata=self.metadata,
+        )
+        if self.is_compressible():
+            s3obj['ContentEncoding'] = 'gzip'
+            s3obj['Body'] = gzip(self.content)
+        else:
+            s3obj['Body'] = self.content
+        return s3obj
+
+    def is_compressible(self):
+        yes = r'^text\/|^application\/json|^application\/\w+\+xml'
+        return self.use_compression and re.match(yes, self.contenttype)
 
 
 # Note that for testing purposes, you can pass both the s3 object and the jinja
@@ -84,8 +119,8 @@ class S3archivist(object):
             self.siteconfig = self.get('_bluebucket.json').data
 
     def get(self, filename):
-        return self.s3object_to_asset(self.s3.get_object(Bucket=self.bucket,
-                                                         Key=filename))
+        return S3asset.from_s3object(self.s3.get_object(Bucket=self.bucket,
+                                                        Key=filename))
 
     def save(self, asset):
         # To be saved an asset must have: key, contenttype, content
@@ -113,7 +148,7 @@ class S3archivist(object):
             ContentType=asset.contenttype,
             Metadata=asset.metadata,
         )
-        return self.s3.put_object(s3obj)
+        return self.s3.put_object(**s3obj)
 
     def persist(self, assetlist):
         for asset in assetlist:
@@ -121,18 +156,6 @@ class S3archivist(object):
 
     def delete(self, filename):
         return self.s3.delete_object(Bucket=self.bucket, Key=filename)
-
-    def s3object_to_asset(self, s3object, **kwargs):
-        b = S3asset(**kwargs)
-        b.last_modified = s3object['LastModified']  # boto3 gives a datetime
-        b.contenttype = s3object['ContentType']
-        # NOTE reflects compressed size if compressed
-        b.content_length = s3object['ContentLength']
-        b.metadata = s3object['Metadata']
-        b.artifact = s3object['Metadata']['artifact']
-        # TODO ungzip content if compressed
-        b.content = s3object['Body'].read()
-        return b
 
     def new_asset(self, key=None, **kwargs):
         return S3asset(bucket=self.bucket, key=key, **kwargs)

@@ -24,7 +24,8 @@ except ImportError:
 
 import json
 
-from bluebucket.archivist import S3archivist
+from bluebucket.archivist import S3archivist, S3asset
+from bluebucket.util import gzip, gunzip
 import stubs
 import pytest
 
@@ -239,9 +240,8 @@ def test_save_no_filename():
 # large objects, we'll add a get_stream method that returns a StreamingAsset.
 
 def test_s3object_to_asset_binary():
-    arch = S3archivist(testbucket, s3=mock.Mock(), siteconfig={})
     resp = stubs.s3get_response_binary()
-    bobj = arch.s3object_to_asset(resp)
+    bobj = S3asset.from_s3object(resp)
     assert bobj.content_length == resp['ContentLength']
     assert bobj.contenttype == resp['ContentType']
     assert bobj.last_modified == resp['LastModified']
@@ -251,16 +251,14 @@ def test_s3object_to_asset_binary():
 
 
 def test_s3object_to_asset_binary_has_no_text():
-    arch = S3archivist(testbucket, s3=mock.Mock(), siteconfig={})
-    bobj = arch.s3object_to_asset(stubs.s3get_response_binary())
+    bobj = S3asset.from_s3object(stubs.s3get_response_binary())
     assert bobj.content == stubs.binary_content
     with pytest.raises(ValueError):
         assert bobj.text == stubs.binary_content
 
 
 def test_s3object_to_asset_binary_has_no_json():
-    arch = S3archivist(testbucket, s3=mock.Mock(), siteconfig={})
-    bobj = arch.s3object_to_asset(stubs.s3get_response_binary())
+    bobj = S3asset.from_s3object(stubs.s3get_response_binary())
     assert bobj.content == stubs.binary_content
     with pytest.raises(ValueError):
         assert bobj.data == stubs.binary_content
@@ -269,8 +267,7 @@ def test_s3object_to_asset_binary_has_no_json():
 # If the content type matches text/*, the text property will contain the decoded
 # unicode text. The content property still contains raw bytes.
 def test_s3object_to_asset_text():
-    arch = S3archivist(testbucket, s3=mock.Mock(), siteconfig={})
-    bobj = arch.s3object_to_asset(stubs.s3get_response_text_utf8())
+    bobj = S3asset.from_s3object(stubs.s3get_response_text_utf8())
     assert bobj.content == stubs.text_content.encode('utf-8')
     assert bobj.text == stubs.text_content
 
@@ -278,10 +275,67 @@ def test_s3object_to_asset_text():
 # If the content type is application/json, the data property should contain the
 # parsed data structure.
 def test_s3object_to_asset_json():
-    arch = S3archivist(testbucket, s3=mock.Mock(), siteconfig={})
-    bobj = arch.s3object_to_asset(stubs.s3get_response_json())
+    bobj = S3asset.from_s3object(stubs.s3get_response_json())
     assert bobj.content == stubs.json_content
     assert bobj.data == json.loads(stubs.json_content)
+
+
+def test_asset_text_mutator():
+    arch = S3archivist(testbucket, s3=mock.Mock(), siteconfig={})
+    asset = arch.new_asset(key='testkey', text='¿Dónde esta el baño?',
+                           contenttype='text/plain')
+    assert type(asset.content) == bytes
+    assert asset.text == '¿Dónde esta el baño?'
+
+
+def test_asset_data_mutator():
+    arch = S3archivist(testbucket, s3=mock.Mock(), siteconfig={})
+    asset = arch.new_asset(key='testkey', data={"this": "that"},
+                           contenttype='application/json')
+    assert asset.content == '{"this": "that"}'
+    assert asset.data == {"this": "that"}
+
+
+def test_text_asset_compresses():
+    asset = S3asset(bucket=testbucket, text='¿Dónde esta el baño?',
+                    contenttype='text/plain; charset=utf-8')
+    result = asset.as_s3object()
+    assert result['Body'] == gzip('¿Dónde esta el baño?'.encode('utf-8'))
+    assert result['ContentEncoding'] == 'gzip'
+
+
+def test_json_asset_compresses():
+    data = json.dumps({"a": '¿Dónde esta el baño?'})
+    asset = S3asset(bucket=testbucket, content=data,
+                    contenttype='application/json')
+    result = asset.as_s3object()
+    assert result['Body'] == gzip(data)
+    assert result['ContentEncoding'] == 'gzip'
+
+
+def test_rss_compresses():
+    asset = S3asset(bucket=testbucket, text='¿Dónde esta el baño?',
+                    contenttype='application/rss+xml')
+    result = asset.as_s3object()
+    assert result['Body'] == gzip('¿Dónde esta el baño?'.encode('utf-8'))
+    assert result['ContentEncoding'] == 'gzip'
+
+
+def test_uncompressable_contenttype():
+    asset = S3asset(bucket=testbucket, text='¿Dónde esta el baño?',
+                    contenttype='application/octet-stream')
+    result = asset.as_s3object()
+    assert result['Body'] == '¿Dónde esta el baño?'.encode('utf-8')
+    assert 'ContentEncoding' not in result
+
+
+def test_compression_disabled():
+    asset = S3asset(bucket=testbucket, text='¿Dónde esta el baño?',
+                    contenttype='text/plain; charset=utf-8',
+                    use_compression=False)
+    result = asset.as_s3object()
+    assert result['Body'] == '¿Dónde esta el baño?'.encode('utf-8')
+    assert 'ContentEncoding' not in result
 
 
 #############################################################################
