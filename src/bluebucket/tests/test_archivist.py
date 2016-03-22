@@ -23,8 +23,9 @@ except ImportError:
     import unittest.mock as mock
 
 import json
+from pytz import timezone
 
-from bluebucket.archivist import S3archivist, S3asset
+from bluebucket.archivist import S3archivist, S3asset, inflate_config
 from bluebucket.util import gzip, gunzip
 import stubs
 import pytest
@@ -357,4 +358,28 @@ def test_jinja_custom_prefix():
     jinja = arch.jinja
     assert jinja.loader.bucket == testbucket
     assert jinja.loader.prefix == "tests"
+
+
+###########################################################################
+# Test inflate_config
+###########################################################################
+
+# Given a timezone in string format
+# When inflate_config
+# Then the return value has timezone object as returned by pytz
+def test_timezone_from_str():
+    config = {'timezone': 'America/New_York'}
+    cfg = inflate_config(config)
+
+    assert hasattr(cfg['timezone'], 'localize')
+
+
+# Given a timezone in object form
+# When inflate_config
+# Then the return value has timezone object as returned by pytz
+def test_timezone_from_str():
+    config = {'timezone': timezone('America/New_York')}
+    cfg = inflate_config(config)
+
+    assert hasattr(cfg['timezone'], 'localize')
 

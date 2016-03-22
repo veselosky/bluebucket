@@ -21,6 +21,15 @@ import re
 from bluebucket.util import SmartJSONEncoder, gunzip, gzip
 
 
+def inflate_config(config):
+    """Takes a bare decoded JSON dict and creates Python objects from certain
+    keys"""
+    tz = config.get('timezone', 'America/New_York')
+    config['timezone'] = tz if hasattr(tz, 'utcoffset') else timezone(tz)
+    # Your transformation here
+    return config
+
+
 class S3asset(object):
     def __init__(self, **kwargs):
         self.artifact = None
@@ -113,10 +122,8 @@ class S3archivist(object):
         if self.s3 is None:
             self.s3 = boto3.client('s3')
 
-        # FIXME siteconfig needs some post-processing to upgrade things to
-        # python objects (e.g. timezone).
         if self.siteconfig is None:
-            self.siteconfig = self.get('_bluebucket.json').data
+            self.siteconfig = inflate_config(self.get('_bluebucket.json').data)
 
     def get(self, filename):
         return S3asset.from_s3object(self.s3.get_object(Bucket=self.bucket,

@@ -26,6 +26,7 @@ from __future__ import absolute_import, print_function, unicode_literals
 import pytz
 import logging
 import posixpath as path
+from pytz import timezone
 
 from .__about__ import *  # noqa
 from .archivist import S3archivist
@@ -117,13 +118,4 @@ def handle_message(event, context):
     # Does Lambda care about the return value of this function?
     return assets
 
-
-class ConfigLoader(object):
-    @property
-    def timezone(self):
-        if self._timezone:
-            return self._timezone
-        zone = self.siteconfig.get('timezone', 'America/New_York')
-        self._timezone = pytz.timezone(zone)
-        return self._timezone
 
