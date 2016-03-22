@@ -16,12 +16,7 @@
 #
 from __future__ import absolute_import, print_function, unicode_literals
 import mock
-
-# The dispatcher is the "application" for most purposes. It is responsible for
-# loading the context/configuration, dispatching events, and calling the
-# archivist to perform IO.
-# A dispatcher is given an archivist and a list of scribes.
-from bluebucket.dispatcher import Dispatcher
+from bluebucket import handle_event
 import stubs
 
 
@@ -38,9 +33,26 @@ def test_non_s3_event():
     del(ev['s3'])
     scribe1 = mock.Mock()
 
-    d = Dispatcher({})
-    d.scribes = [scribe1]
-    rval = d.handle_event(ev, {})
+    scribe_map = {'.html': [scribe1]}
+    archivist = mock.Mock()
+    rval = handle_event(scribe_map, ev, None, archivist)
+    assert rval == []
+    archivist.assert_not_called()
+    scribe1.on_save.assert_not_called()
+    scribe1.on_delete.assert_not_called()
+
+
+# Given config containing scribes
+# When an event key has an extenstion that is not configured
+# Then dispatcher ignores the event without calling any scribe methods
+def test_non_configured_extension():
+    evs = stubs.generate_event(key='test.notconfigured')
+    ev = evs['Records'][0]
+    scribe1 = mock.Mock()
+
+    scribe_map = {'.html': [scribe1]}
+    archivist = mock.Mock()
+    rval = handle_event(scribe_map, ev, None, archivist)
     assert rval == []
     scribe1.on_save.assert_not_called()
     scribe1.on_delete.assert_not_called()
@@ -52,17 +64,15 @@ def test_non_s3_event():
 def test_on_save():
     evs = stubs.generate_event()
     ev = evs['Records'][0]
+    archivist = mock.Mock()
     scribe1 = stubs.fake_scribe(on_save=['scribe1'])
     scribe2 = stubs.fake_scribe(on_save=['scribe2'])
+    scribe_map = {'.html': [scribe1, scribe2]}
 
-    d = Dispatcher({})
-    d.scribes = [scribe1, scribe2]
-    with mock.patch.object(d, 'get_event_asset') as get_event_asset:
-        rval = d.handle_event(ev, {})
+    rval = handle_event(scribe_map, ev, None, archivist)
     assert rval == ['scribe1', 'scribe2']
-    get_event_asset.assert_called_once_with()
-    scribe1.on_save.assert_called_once_with(mock.ANY)
-    scribe2.on_save.assert_called_once_with(mock.ANY)
+    scribe1.on_save.assert_called_once_with(mock.ANY, mock.ANY)
+    scribe2.on_save.assert_called_once_with(mock.ANY, mock.ANY)
 
 
 # Given many scribes
@@ -71,17 +81,16 @@ def test_on_save():
 def test_on_delete():
     evs = stubs.generate_event(method='ObjectRemoved:Delete')
     ev = evs['Records'][0]
+    archivist = mock.Mock()
     scribe1 = stubs.fake_scribe(on_delete=['scribe1'])
     scribe2 = stubs.fake_scribe(on_delete=['scribe2'])
+    scribe_map = {'.html': [scribe1, scribe2]}
 
-    d = Dispatcher({})
-    d.scribes = [scribe1, scribe2]
-    with mock.patch.object(d, 'get_event_asset') as get_event_asset:
-        rval = d.handle_event(ev, {})
+    rval = handle_event(scribe_map, ev, None, archivist)
     assert rval == ['scribe1', 'scribe2']
-    get_event_asset.assert_not_called()
-    scribe1.on_delete.assert_called_once_with(ev['s3']['object']['key'])
-    scribe2.on_delete.assert_called_once_with(ev['s3']['object']['key'])
+    key = ev['s3']['object']['key']
+    scribe1.on_delete.assert_called_once_with(mock.ANY, key)
+    scribe2.on_delete.assert_called_once_with(mock.ANY, key)
 
 
 # Given many scribes
@@ -91,19 +100,17 @@ def test_on_delete():
 def test_scribe_raises_exception_on_save():
     evs = stubs.generate_event()
     ev = evs['Records'][0]
+    archivist = mock.Mock()
     scribe0 = stubs.fake_scribe(on_save=['scribe0'])
     scribe1 = stubs.fake_scribe(on_save=Exception('FAIL'))
     scribe2 = stubs.fake_scribe(on_save=['scribe2'])
+    scribe_map = {'.html': [scribe0, scribe1, scribe2]}
 
-    d = Dispatcher({})
-    d.scribes = [scribe0, scribe1, scribe2]
-    with mock.patch.object(d, 'get_event_asset') as get_event_asset:
-        rval = d.handle_event(ev, {})
+    rval = handle_event(scribe_map, ev, None, archivist)
     assert rval == ['scribe0', 'scribe2']
-    get_event_asset.assert_called_once_with()
-    scribe0.on_save.assert_called_once_with(mock.ANY)
-    scribe1.on_save.assert_called_once_with(mock.ANY)
-    scribe2.on_save.assert_called_once_with(mock.ANY)
+    scribe0.on_save.assert_called_once_with(mock.ANY, mock.ANY)
+    scribe1.on_save.assert_called_once_with(mock.ANY, mock.ANY)
+    scribe2.on_save.assert_called_once_with(mock.ANY, mock.ANY)
 
 
 # Given many scribes
@@ -113,35 +120,15 @@ def test_scribe_raises_exception_on_save():
 def test_scribe_raises_exception_on_delete():
     evs = stubs.generate_event(method='ObjectRemoved:Delete')
     ev = evs['Records'][0]
+    archivist = mock.Mock()
     scribe0 = stubs.fake_scribe(on_delete=['scribe0'])
     scribe1 = stubs.fake_scribe(on_delete=Exception('FAIL'))
     scribe2 = stubs.fake_scribe(on_delete=['scribe2'])
+    scribe_map = {'.html': [scribe0, scribe1, scribe2]}
 
-    d = Dispatcher({})
-    d.scribes = [scribe0, scribe1, scribe2]
-    with mock.patch.object(d, 'get_event_asset') as get_event_asset:
-        rval = d.handle_event(ev, {})
+    rval = handle_event(scribe_map, ev, None, archivist)
     assert rval == ['scribe0', 'scribe2']
-    get_event_asset.assert_not_called()
-    scribe0.on_delete.assert_called_once_with(mock.ANY)
-    scribe1.on_delete.assert_called_once_with(mock.ANY)
-    scribe2.on_delete.assert_called_once_with(mock.ANY)
-
-
-def test_get_scribes():
-    siteconfig = {'archivist': mock.Mock(),
-                  'scribes': [mock.Mock(), mock.Mock()]}
-
-    d = Dispatcher(siteconfig)
-    d.bucket = 'test_bucket_1'
-
-    scribes = d.get_scribes()
-
-    assert len(scribes) == 2
-    siteconfig['scribes'][0].assert_called_once_with(siteconfig=siteconfig,
-                                                     archivist=mock.ANY)
-    siteconfig['scribes'][1].assert_called_once_with(siteconfig=siteconfig,
-                                                     archivist=mock.ANY)
-    siteconfig['archivist'].assert_called_with('test_bucket_1')
-
+    scribe0.on_delete.assert_called_once_with(mock.ANY, mock.ANY)
+    scribe1.on_delete.assert_called_once_with(mock.ANY, mock.ANY)
+    scribe2.on_delete.assert_called_once_with(mock.ANY, mock.ANY)
 
