@@ -1,13 +1,37 @@
 # Blue Bucket Architecture
 
+The Blue Bucket architecture principals serve as a decision framework, a guide
+to help us design the system correctly. When we need to make a decision about
+how (or whether) to do something, we'll refer to these principles to help us
+make the right choice.
+
 Here are some down-to-earth principles used in Blue Bucket's design:
 
 * Web standards are the instruction manual.
 * Cloud services are the magic sauce. Hardware and software are anti-patterns.
   Minimize use of infrastructure and custom code.
-* Small pieces, loosely joined, are better than big, complex tools.
+* Small pieces, loosely joined, are better than big, complex tools. Each
+  component of the system should have only one task, and should perform that
+  task very well.
+  Also known as the [Single Responsibility Principle][].
 * The file system is the canonical repository. Every artifact of the site is
-  stored in, or derived from, flat files.
+  stored in, or derived from, flat files. An end
+  user should be able to reproduce the entire system given the repository.
+
+These are our values, the outcomes we desire from our architecture:
+
+* Portability is paramount. Users must be able to extract their content at any
+  time and abandon the software without losing any data.
+* Scalability goes in both directions. The system must aim to perform well at
+  very small scale as well as very large scale.
+* Composability is valuable. The system should be interoperable with existing
+  systems, preserving user choice of tools.
+
+## Some definitions
+
+For this discussion we will be using the metaphor of our system as a
+**library**, and the software processes as **agents** or employees in our
+library.
 
 I apologize in advance to professionals in the library science field. The
 metaphors I have adopted to describe the Blue Bucket architecture misuse and
@@ -15,12 +39,6 @@ abuse the language of that field. Nevertheless I find the library metaphor, if
 sometimes misapplied, still eases communication and understanding, because it is
 so much easier to talk about Archivists and Scribes than about "repository
 manager" and "format transformer."
-
-## Some definitions
-
-For this discussion we will be using the metaphor of our system as a
-**library**, and the software processes as **agents** or employees in our
-library.
 
 If this is the digital library of your content, in the Blue Bucket architecture
 S3 is the **archive**, the repository where all your materials are kept.
@@ -58,3 +76,48 @@ for example an index page.
 A **template** is a file used to perform transformation of an archetype into an
 artifact.
 
+[Single Responsibility Principle]: https://en.wikipedia.org/wiki/Single_responsibility_principle
+
+## The Archive, Artifacts, and Scribes
+
+At the center of the blue bucket architecture is the Archive, the S3 bucket (or
+directory) where the content is kept. The things we store in the Archive we
+shall call Artifacts. Artifacts come in several types, defining their role in
+the system.
+
+The most important Artifact in the Blue Bucket system is the Archetype. The
+Archetype is a JSON-formatted file representing each page, article, photo, or
+other content item on our web site. We use the JSON format because 1) we want to
+store structured data about our content as well as unstructured content itself,
+and 2) we want a format that will be usable by our client JavaScript
+applications.
+
+Our web site will be produced by AWS Lambda functions following rules that we
+set up. The key rule is that each Archetype added to the archive will be
+combined with a Template to produce a Monograph.
+
+## Indexes
+
+Aside from data storage, another useful function of a database is to create
+indexes over all the objects in your archive. However, just like web pages,
+indexes can be pre-generated at publish time and stored in the archive in a
+static file. We're going to do exactly that, storing our indexes as JSON files,
+and making them available to our JavaScript clients just like the rest of our
+data.
+
+Useful indexes for a personal blog might include:
+
+* All objects by date
+* Objects by category, then by date
+* Objects by item type, then by date
+
+For a multi-author media site, you might add other indexes, such as by author.
+
+If you have a very high publishing velocity (periods where you are publishing
+more than one item per second) you may find that the index files become a
+bottleneck, because more than one Lambda function may be trying to update them
+at once. If this happens, you will want to resolve it by sharding the index;
+that is, by splitting the index across more than one file. (You'll want to do
+this anyway, as your index files may become very large and start to present a
+performance problem.) An alternative would be to rebuild indexes on a schedule
+instead of on every change (e.g. once per minute).
