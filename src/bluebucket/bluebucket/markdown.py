@@ -26,9 +26,7 @@ Of special note:
 from __future__ import absolute_import, print_function
 
 import json
-import posixpath as path
-
-from bluebucket.util import SmartJSONEncoder
+from bluebucket.util import SmartJSONEncoder, change_ext
 from dateutil.parser import parse as parse_date
 import markdown
 from markdown.extensions.toc import TocExtension
@@ -50,7 +48,6 @@ md = markdown.Markdown(extensions=extensions, lazy_ol=False,
 
 def on_save(archivist, asset):
 
-    basepath, ext = path.splitext(asset.key)
     html = md.convert(asset.text)
 
     metadata = md.Meta
@@ -66,7 +63,7 @@ def on_save(archivist, asset):
 
     metadict['_content'] = html
     content = json.dumps(metadict, cls=SmartJSONEncoder, sort_keys=True)
-    archetype = archivist.new_asset(key=basepath + '.json',
+    archetype = archivist.new_asset(key=change_ext(asset.key, '.json'),
                                     contenttype='application/json',
                                     content=content,
                                     artifact='archetype')
@@ -75,7 +72,6 @@ def on_save(archivist, asset):
 
 
 def on_delete(archivist, key):
-    basepath, ext = path.splitext(key)
-    arch = archivist.new_asset(key=basepath + '.json', deleted=True)
+    arch = archivist.new_asset(key=change_ext(key, '.json'), deleted=True)
     return [arch]
 

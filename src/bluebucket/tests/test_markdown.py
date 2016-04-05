@@ -55,8 +55,8 @@ def test_transform_on_save():
     print(out)
     assert archetype.content == out
     assert archetype.contenttype.startswith('application/json')
-    assert archetype.key == 'index.json'
     assert archetype.artifact == 'archetype'
+    assert archetype.key.endswith('index.json')
 
 
 # Given a key representing a markdown file

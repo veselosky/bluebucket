@@ -15,11 +15,11 @@
 #   limitations under the License.
 #
 from __future__ import absolute_import, print_function, unicode_literals
-from io import BytesIO
-from gzip import GzipFile
-
 import datetime
+from gzip import GzipFile
+from io import BytesIO
 import json
+import posixpath as path
 
 
 class SmartJSONEncoder(json.JSONEncoder):
@@ -43,6 +43,12 @@ class SmartJSONEncoder(json.JSONEncoder):
             return r
         else:
             return super(SmartJSONEncoder, self).default(o)
+
+
+def change_ext(key, ext):
+    if not ext.startswith('.'):
+        ext = '.' + ext
+    return path.splitext(key)[0] + ext
 
 
 def gzip(content, filename=None, compresslevel=9, mtime=None):

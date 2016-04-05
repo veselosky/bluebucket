@@ -26,7 +26,7 @@ import json
 from pytz import timezone
 
 from bluebucket.archivist import S3archivist, S3asset, inflate_config
-from bluebucket.util import gzip, gunzip
+from bluebucket.util import gzip
 import stubs
 import pytest
 
@@ -37,16 +37,6 @@ testbucket = 'test-bucket'
 ###########################################################################
 # Archivist creating Asset objects
 ###########################################################################
-
-# Given an archivist
-# When I call archivist.new_asset()
-# A new asset is returned
-# and the asset has a bucket attribute with the same value as the archivist
-def test_new_asset():
-    arch = S3archivist(testbucket, s3=mock.Mock(), siteconfig={})
-    asset = arch.new_asset()
-    assert asset.bucket == testbucket
-
 
 # Given an archivist
 # When I call archivist.new_asset(key)
@@ -145,9 +135,10 @@ def test_save_success():
 
     arch.s3.put_object.assert_called_with(
         Key='filename.txt',
-        Body='contents',
+        Body=mock.ANY,
         Metadata={"artifact": "source"},
         ContentType=contenttype,
+        ContentEncoding='gzip',
         Bucket=testbucket,
     )
 
@@ -168,9 +159,10 @@ def test_save_with_metadata():
 
     arch.s3.put_object.assert_called_with(
         Key='filename.txt',
-        Body='contents',
+        Body=mock.ANY,
         Metadata={"stuff": "things", "artifact": "source"},
         ContentType=contenttype,
+        ContentEncoding='gzip',
         Bucket=testbucket,
     )
 
@@ -222,13 +214,34 @@ def test_save_no_content():
 # Then archivist raises TypeError
 def test_save_no_filename():
     arch = S3archivist(testbucket, s3=mock.Mock(), siteconfig={})
-    asset = arch.new_asset(content='contents',
-                           contenttype=contenttype,
-                           artifact='source',
-                           )
     with pytest.raises(TypeError) as einfo:
+        asset = arch.new_asset(content='contents',
+                               contenttype=contenttype,
+                               artifact='source',
+                               )
         arch.save(asset)
-    assert 'key' in str(einfo.value)
+    assert einfo
+
+
+###########################################################################
+# Archivist all_archetypes
+###########################################################################
+
+# Given anrchivist
+# When all_archetypes() is called
+# Then it attempts to retrieve all archetypes from s3
+def test_all_archetypes():
+    arch = S3archivist(testbucket, s3=mock.Mock(), siteconfig={})
+    arch.s3.list_objects.side_effect = [
+        {"IsTruncated": True, "NextMarker": "1", "Contents": []},
+        {"IsTruncated": False, "Contents": []},
+    ]
+    for item in arch.all_archetypes():
+        pass
+    call = mock.call
+    call1 = call(Bucket=arch.bucket, Prefix=arch.archetype_prefix)
+    call2 = call(Bucket=arch.bucket, Marker="1", Prefix=arch.archetype_prefix)
+    arch.s3.list_objects.assert_has_calls([call1, call2])
 
 
 ###########################################################################
@@ -377,7 +390,7 @@ def test_timezone_from_str():
 # Given a timezone in object form
 # When inflate_config
 # Then the return value has timezone object as returned by pytz
-def test_timezone_from_str():
+def test_timezone_from_obj():
     config = {'timezone': timezone('America/New_York')}
     cfg = inflate_config(config)
 

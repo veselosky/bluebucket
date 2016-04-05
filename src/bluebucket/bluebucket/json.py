@@ -18,8 +18,7 @@
 Transforms a JSON archetype to a monograph using a Jinja2 template.
 """
 from __future__ import absolute_import, print_function, unicode_literals
-import posixpath as path
-from bluebucket.util import is_sequence
+from bluebucket.util import is_sequence, change_ext
 
 
 def get_template(archivist, context):
@@ -51,12 +50,12 @@ def get_template(archivist, context):
 def on_save(archivist, asset):
     if not asset.artifact == 'archetype':
         return []
-    basepath, ext = path.splitext(asset.key)
     context = asset.data
     context['_site'] = archivist.siteconfig
     template = get_template(archivist, context)
     content = template.render(context)
-    monograph = archivist.new_asset(key=basepath + '.html',
+    key = archivist.unprefix(asset.key)
+    monograph = archivist.new_asset(key=change_ext(key, '.html'),
                                     contenttype='text/html; charset=utf-8',
                                     content=content,
                                     artifact='monograph')
@@ -64,6 +63,5 @@ def on_save(archivist, asset):
 
 
 def on_delete(archivist, key):
-    basepath, ext = path.splitext(key)
-    return [archivist.new_asset(key=basepath + '.html', deleted=True)]
+    return [archivist.new_asset(key=change_ext(key, '.html'), deleted=True)]
 

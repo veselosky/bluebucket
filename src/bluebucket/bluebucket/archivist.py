@@ -17,8 +17,10 @@
 from __future__ import absolute_import, print_function, unicode_literals
 import boto3
 import json
+import posixpath as path
 import re
 from bluebucket.util import SmartJSONEncoder, gunzip, gzip
+from pytz import timezone
 
 
 def inflate_config(config):
@@ -108,6 +110,8 @@ class S3archivist(object):
 
     def __init__(self, bucket, **kwargs):
         self.bucket = bucket
+        self.archetype_prefix = '/_A/'
+        self.index_prefix = '/_I/'
         self.s3 = None
         self.siteconfig = None
         self._jinja = None  # See jinja property below
@@ -123,7 +127,7 @@ class S3archivist(object):
             self.s3 = boto3.client('s3')
 
         if self.siteconfig is None:
-            self.siteconfig = inflate_config(self.get('_bluebucket.json').data)
+            self.siteconfig = inflate_config(self.get('bluebucket.json').data)
 
     def get(self, filename):
         return S3asset.from_s3object(self.s3.get_object(Bucket=self.bucket,
@@ -148,13 +152,7 @@ class S3archivist(object):
             raise TypeError("""To save an empty asset, set content to an empty
                             bytestring""")
         asset.metadata['artifact'] = asset.artifact
-        s3obj = dict(
-            Bucket=self.bucket,  # NOTE archivist's bucket, NOT asset's!
-            Key=asset.key,
-            Body=asset.content,  # TODO gzip content if compressable
-            ContentType=asset.contenttype,
-            Metadata=asset.metadata,
-        )
+        s3obj = asset.as_s3object(self.bucket)
         return self.s3.put_object(**s3obj)
 
     def persist(self, assetlist):
@@ -164,8 +162,23 @@ class S3archivist(object):
     def delete(self, filename):
         return self.s3.delete_object(Bucket=self.bucket, Key=filename)
 
-    def new_asset(self, key=None, **kwargs):
+    def new_asset(self, key, **kwargs):
+        if kwargs.get('artifact', None) == 'archetype':
+            if not key.startswith(self.archetype_prefix):
+                key = path.join(self.archetype_prefix, key)
+        elif kwargs.get('artifact', None) == 'index':
+            if not key.startswith(self.index_prefix):
+                key = path.join(self.index_prefix, key)
+
         return S3asset(bucket=self.bucket, key=key, **kwargs)
+
+    def unprefix(self, key):
+        "Remove the archetype or index prefix from a key."
+        if key.startswith(self.archetype_prefix):
+            key = key[len(self.archetype_prefix):]
+        elif key.startswith(self.index_prefix):
+            key = key[len(self.index_prefix):]
+        return key
 
     @property
     def jinja(self):
@@ -176,3 +189,23 @@ class S3archivist(object):
         template_dir = self.siteconfig.get('template_dir', '_templates')
         self._jinja = Environment(loader=S3loader(self.bucket, template_dir))
         return self._jinja
+
+    def all_archetypes(self):
+        "A generator function that will yield every archetype asset."
+        # S3 will return up to 1000 items in a list_objects call. If there are
+        # more, IsTruncated will be True and NextMarker is the offset to use to
+        # get the next 1000.
+        incomplete = True
+        marker = None
+        while incomplete:
+            args = dict(Bucket=self.bucket, Prefix=self.archetype_prefix)
+            if marker:
+                args['Marker'] = marker
+            listing = self.s3.list_objects(**args)
+            for item in listing['Contents']:
+                asset = self.get(item['Key'])
+                yield asset
+            if listing['IsTruncated']:
+                marker = listing['NextMarker']
+            else:
+                incomplete = False
