@@ -5,7 +5,7 @@
 The term "content type" seems natural to use in a content publishing system, but
 it can get overused. The HTTP header field of the same name defines the MIME
 type of the HTTP message payload, and we want to preserve that data. But there
-is also a higher-order "type." An item could be an Article, and Event, a Person,
+is also a higher-order "type." An item could be an Article, an Event, a Person,
 a Photo Gallery, a Shared Link, and so on. To reduce confusion, we will refer to
 this level of type as "item type" and reserve "content type" to refer to the
 MIME type.

@@ -71,3 +71,11 @@ To prevent collisions, we will adopt these rules.
   whereas monographs and anthologies will be stored using `.html`.
 * Sources in JSON format will be stored with a `.yaml` extension. All correct
   JSON files are also correct YAML files, so this is perfectly legitimate.
+
+## Using DynamoDB to power indexes
+
+DynamoDB has low or no fixed costs depending on reserved throughput
+capacity, and the incremental costs are very low. In fact, most web sites will
+have such low usage that it will fall under the AWS Free Tier, so DynamoDB is
+basically free unless abused.
+

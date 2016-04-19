@@ -84,24 +84,41 @@ over all our data. We'll use that index to generate index pages and feeds.
 * The system generates index pages pointing to all the posts.
 * The system generates an RSS feed of recent updates.
 
-## Phase 3
+At the end of phase 2, the core content engine and archive will be complete.
+This will form the center of the new system. Further work will bifurcate into
+*supply-side* and *demand-side*.
 
-In phase 3 we will add a publishing API to our system, so that we can use tools
-aside from our command line client to get content into our Library. Importantly,
-we want to be able to use generic tools, without giving them access to our AWS
-credentials. We do, however, want to restrict access to authorized curators, so
-we will provide an authentication system.
+## Supply-side Roadmap
 
-## Phase 4
+On the supply side, we will examine and experiment with tools for content
+creation and curation. 
 
-With the publishing API in place, we will use it to add some friendlier content
-production tools to our system, and we will start to look a little less like a
-traditional static site generator, and a little more like a traditional CMS.
+* We will introduce the concept of "curators" to the Blue Bucket system,
+  demonstrating how content production tools can be loosely coupled with the
+  underlying archive.
+* We will create a [PESOS][] curator that will add social media posts to the
+  Blue Bucket archive.
+* We will select or build an online writing tool that will be useful for posting
+  textual content to the archive without the use of client-side tools.
+* We will introduce the use of schemas to define the semantic description of
+  content items, and the possibility of schema translators.
+* We will explore the use of natural language processing techniques to analyze,
+  index, and enhance item metadata, with an eye toward better recirculation and
+  personalization features on the demand side.
 
-## And beyond...
+[PESOS]: https://indiewebcamp.com/PESOS
 
-If we make it through the above phases successfully, we'll set some new goals
-and keep moving forward.
+## Demand-side Roadmap
+
+On the demand side, we will develop web-native deliver mechanisms and formats.
+
+* We will introduce the POSH (Plain Old Semantic HTML) template set, a generic
+  HTML structure for representing content items.
+* We will develop POSH templates for key artifact classes, encoding metadata in
+  the HTML to enhance findability on search engines and presentation on social
+  media sites.
+* We will demonstrate the use of authentication and personalization within the
+  static delivery architecture of Blue Bucket.
 
 ## Key Metrics
 

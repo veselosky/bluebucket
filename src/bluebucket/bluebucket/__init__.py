@@ -15,7 +15,6 @@
 #   limitations under the License.
 #
 """
-
 This bluebucket module is a library of functions and classes factored out from
 the Blue Bucket Project Lambda function handlers.
 
@@ -23,227 +22,100 @@ For fields expecting an artifact, valid artifact values are:
     [None, 'anthology', 'archetype', 'asset', 'monograph', 'source']
 
 """
-from __future__ import absolute_import, print_function
-from bluebucket.__about__ import *  # noqa
-
-import boto3
-import datetime
-import json
+from __future__ import absolute_import, print_function, unicode_literals
+import pytz
 import logging
 import posixpath as path
-import pytz
+from pytz import timezone
 
-from functools import partial
+from .__about__ import *  # noqa
+from .archivist import S3archivist
+import bluebucket.markdown
+import bluebucket.json
 
 
-class SmartJSONEncoder(json.JSONEncoder):
+# TODO Decent configuration for logger
+logger = logging.getLogger('bluebucket')
+default_scribes = {
+    '.md': [bluebucket.markdown],
+    '.markdown': [bluebucket.markdown],
+    '.mdown': [bluebucket.markdown],
+    '.json': [bluebucket.json],
+}
+
+
+# DO NOT REGISTER THIS FUNCTION WITH LAMBDA! USE handle_message below!
+# Handle an event:
+def handle_event(scribe_map, event, context, archivist_class=S3archivist):
+    """Handles a single event from an event message.
+
+    This method handles most of the boilerplate work for event handling,
+    including filtering out non-s3 events and events on files that the
+    class does not know how to handle. It will dispatch to one of three
+    event handling routines: `on_delete`, `on_save`, or `on_ignore`. The
+    base Scribe class has default implementations for all three. If your
+    scribe implements a simple transform, there is no need for you to
+    override these event handling routines. Simply override the
+    `transform` method.
+
     """
-    JSONEncoder subclass that knows how to encode date/time.
-    """
-    def default(self, o):
-        if isinstance(o, datetime.datetime):
-            r = o.isoformat()
-            if o.microsecond:
-                r = r[:23] + r[26:]
-            if r.endswith('+00:00'):
-                r = r[:-6] + 'Z'
-            return r
-        elif isinstance(o, datetime.date):
-            return o.isoformat()
-        elif isinstance(o, datetime.time):
-            r = o.isoformat()
-            if o.microsecond:
-                r = r[:12]
-            return r
-        else:
-            return super(SmartJSONEncoder, self).default(o)
+    # For now, ignore any event not coming from S3
+    if event['eventSource'] != 'aws:s3':
+        logger.warning('Unexpected event, ignoring: ' + repr(event))
+        return []
 
+    bucket = event['s3']['bucket']['name']
+    key = event['s3']['object']['key']
+    archivist = archivist_class(bucket)
 
-class Scribe(object):
-    """A base class for scribes. Reads from S3, performs transform, writes back.
+    basepath, ext = path.splitext(key)
+    scribes = scribe_map.get(ext, None)
+    # If ext not in handlers dict, ignore event
+    if not scribes:
+        logger.warning('Unhandled extention, ignoring: ' + ext)
+        return []
 
-    To use the Scribe class, create a subclass, overriding the key attributes
-    and methods. Then call `make_event_handler` to produce a handler function
-    for Lambda. ::
-
-        # File: html2text.py
-        from bluebucket import Scribe
-
-        class HTML2Text(Scribe):
-            accepts_suffixes = ['.html']
-            accepts_artifacts = [None, 'source']
-            target_suffix = '.txt'
-            target_content_type = 'text/plain'
-            target_artifact = 'monograph'
-
-            def transform(self, iostream):
-                from utils.html import strip_tags
-                return strip_tags(iostream.read().decode('utf-8'))
-
-        handle_event = HTML2Text.make_event_handler()
-        # Now register html2text.handle_event as your Lambda function handler
-    """
-
-    #: List of file name (key) extensions acceptable as input. Override in
-    #: subclass. Example: ['.yaml', '.yml']
-    accepts_suffixes = None
-
-    #: List of directories (key prefixes) acceptable as input. Override in
-    #: subclass. Example: ['images/', 'pics/']
-    accepts_prefixes = None
-
-    #: List of artifact types acceptable as input. Override in subclass.
-    #: Example: [None, 'source']
-    accepts_artifacts = None
-
-    #: The file name extension (key suffix) the scribe outputs.
-    #: Example: '.html'
-    target_suffix = None
-
-    #: The content type the scribe generates as output. Example: 'text/html'
-    target_content_type = None
-
-    #: The artifact type the scribe outputs. Example: 'archetype'
-    target_artifact = 'asset'
-
-    #: Metadata dict to append when saving target.
-    metadata = None
-
-    #: A reference to the boto3 s3 client. Mock this out for unit tests!
-    s3 = boto3.client('s3')
-
-    _siteconfig = None
-    _timezone = None
-
-    @property
-    def siteconfig(self):
-        """Dictionary of configuration data for your site (from _site.json)"""
-        if not self._siteconfig:
-            cfg = self.s3.get_object(Bucket=self.bucket, Key='_site.json')
-            self._siteconfig = json.loads(cfg['Body'].read().decode('utf-8'))
-        return self._siteconfig
-
-    @property
-    def logger(self):
-        return logging.getLogger(type(self).__name__)
-
-    @property
-    def timezone(self):
-        if self._timezone:
-            return self._timezone
-        zone = self.siteconfig.get('timezone', 'America/New_York')
-        self._timezone = pytz.timezone(zone)
-        return self._timezone
-
-    def handle_event(self, event, context):
-        """Handles a single event from an event message.
-
-        This method handles most of the boilerplate work for event handling,
-        including filtering out non-s3 events and events on files that the
-        class does not know how to handle. It will dispatch to one of three
-        event handling routines: `on_delete`, `on_save`, or `on_ignore`. The
-        base Scribe class has default implementations for all three. If your
-        scribe implements a simple transform, there is no need for you to
-        override these event handling routines. Simply override the
-        `transform` method.
-
-        """
-        self.event = event
-        self.context = context
-
-        if event['eventSource'] != 'aws:s3':
-            self.logger.warning('Unexpected event, ignoring: ' + repr(event))
-            return self.on_ignore()
-
-        self.bucket = event['s3']['bucket']['name']
-        self.key = event['s3']['object']['key']
-        basepath, ext = path.splitext(self.key)
-        if self.accepts_suffixes and ext not in self.accepts_suffixes:
-            self.logger.warning(
-                '%s does not have acceptable suffix, ignoring' % self.key)
-            return self.on_ignore()
-        # TODO filter against accepts_prefixes
-
-        # TODO allow callable as target_suffix for more complex transformations
-        self.targetkey = basepath + self.target_suffix
-
+    assets = []
+    for scribe in scribes:
         if event['eventName'].startswith('ObjectRemoved:'):
-            return self.on_delete()
+            try:
+                assets.extend(scribe.on_delete(archivist, key))
+            except Exception as e:
+                logger.error(e)
+        elif event['eventName'].startswith('ObjectCreated:'):
+            # Retrieve asset from S3 bucket and unwrap
+            asset = archivist.get(key)
+            try:
+                assets.extend(scribe.on_save(archivist, asset))
+            except Exception as e:
+                logger.error(e)
+        else:
+            # Ignore unsupported event types
+            logger.info('skipping unhandled event type %s' % event['eventName'])
+            return
 
-        if not event['eventName'].startswith('ObjectCreated:'):
-            self.logger.info('skipping unhandled event type %s'
-                             % event['eventName'])
-            return self.on_ignore()
+    archivist.persist(assets)
+    return assets
 
-        return self.on_save()
 
-    def on_delete(self):
-        """Handles actions when an S3 object is deleted (or replaced with
-        DeleteMarker)."""
-        # NOTE: If target does not exist, raises exception. That's cool.
-        target = self.s3.get_object(Bucket=self.bucket, Key=self.targetkey)
+def do_indexing(assets):
+    pass  # TODO Make an indexer that does something
+
+
+# Function to unloop events, calls handle_event for each event separately
+# IRL never seen more than one per message, but may as well handle it.
+# REGISTER THIS FUNCTION WITH LAMBDA
+def handle_message(event, context):
+    assets = []
+    eventlist = event['Records']
+    for ev in eventlist:
         try:
-            if target['Metadata'].get('artifact', None) != self.target_artifact:
-                self.logger.warning(
-                    'Target artifact %s of %s does not match'
-                    % (target['Metadata']['artifact'], self.targetkey))
-                return
-        except:
-            self.logger.warning('Target artifact (None) of %s does not match'
-                                % self.targetkey)
-            return
+            assets.extend(handle_event(default_scribes, ev, context))
+        except Exception as e:
+            logger.exception("Event crashed: " + repr(e))
+    if assets:
+        do_indexing(assets)
+    # Does Lambda care about the return value of this function?
+    return assets
 
-        self.logger.info('%s deleted, removing %s' % (self.key, self.targetkey))
-        self.s3.delete_object(Bucket=self.bucket, Key=self.targetkey)
-        return
-
-    def on_ignore(self):
-        """Handles actions when an event is skipped (i.e. does nothing)."""
-        pass
-
-    def on_save(self):
-        """Handles actions when an S3 object is saved.
-
-        The default implementation calls `self.transform` to transform the
-        object's body content, then saves the target object back to the bucket.
-        Most subclasses will only need to override the `transform` method.
-        """
-        self.obj = self.s3.get_object(Bucket=self.bucket, Key=self.key)
-        # test artifact against accepts_artifacts
-        source_artifact = self.obj['Metadata'].get('artifact', None)
-        if source_artifact not in self.accepts_artifacts:
-            self.logger.warning(
-                'Unacceptable input artifact (%s) for %s, skipping'
-                % (source_artifact, self.key))
-            return
-
-        body = self.transform(self.obj['Body'])
-        # TODO ¿Merge source metadata with target metadata?
-        metadata = self.metadata or {}
-        metadata['artifact'] = self.target_artifact
-
-        self.s3.put_object(
-            Bucket=self.bucket,
-            Key=self.targetkey,
-            ContentType=self.target_content_type,
-            Body=body,
-            Metadata=metadata
-        )
-
-    def transform(self, iostream):
-        raise NotImplemented
-
-    @classmethod
-    def make_event_handler(cls):
-        def handle_event_with_class(cls, event, context):
-            return_value = None
-            eventlist = event['Records']
-            for ev in eventlist:
-                try:
-                    return_value = cls().handle_event(ev, context)
-                except Exception as e:
-                    logging.exception("Event crashed: " + repr(e))
-            return return_value  # return whatever the last event handler did
-
-        return partial(handle_event_with_class, cls)
 

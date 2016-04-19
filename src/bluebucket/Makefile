@@ -49,12 +49,18 @@ dist: clean
 	python setup.py bdist_wheel
 	ls -l dist
 
-lambda: dist/bluebucket-lambda.zip
+dist/bluebucket-lambda.zip:
 	mkdir -p build/lambda
 	mkdir -p dist
 	pip install -t build/lambda/ .
 	rm -rf build/lambda/*.dist-info build/lambda/*.egg-info
+	# boto3 is provided by Lambda, so do not package it or its deps
+	rm -rf build/lambda/boto3 build/lambda/botocore
+	# shaves ~1MB, but how much time cost to recompile?
+	find ./build/lambda -name '*.pyc' -exec rm -f {} +
 	cd build/lambda/ && zip -r ../../dist/bluebucket-lambda.zip *
+
+lambda: dist/bluebucket-lambda.zip
 
 deploy: lambda
 	aws lambda update-function-code --function-name jsonarchetype \

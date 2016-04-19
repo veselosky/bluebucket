@@ -42,3 +42,10 @@ superclass of the Scribe, but a composed member.
 * We still have the problem that we do not attempt to detect encodings other
   than UTF-8. Should we bother? Or just make it a constraint?
 
+## Design Issues
+
+In the old (improperly decomposed) design, the event dispatcher on the Scribe
+dispatches to `self`. When factoring out the archivist, the event dispatcher
+should move to the archivist (since the event format will vary with the
+underlying archive provider). How should the archivist's event dispatcher
+discover the scribe's event handlers?

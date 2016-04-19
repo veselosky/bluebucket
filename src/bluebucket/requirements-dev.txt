@@ -11,3 +11,4 @@ pytest-cov
 sphinx
 tox
 twine
+-r requirements.txt

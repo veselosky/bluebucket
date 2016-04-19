@@ -7,7 +7,7 @@ infrastructure failures, and most kinds of attacks?
 The Blue Bucket Project aims to show that the existing pattern used to build web
 content management systems is broken, or at least, that the most common
 publishing use cases are better served by a different implementation pattern.
-My contention is that traditional dynamic, vertically-integrated content
+My contention is that traditional database-driven, vertically-integrated content
 management systems are an anti-pattern for web publishing, and are as much
 hindrance as help to publishing operations at many scales. A CMS can be
 decomposed into a distributed system of cooperating processes. By rearranging
@@ -20,9 +20,9 @@ costs while simultaneously improving reliability and performance.
 The typical system architecture of current content management systems used in
 production does not fit with the task given. These systems are constructed as if
 they were near-real-time transactional systems, and therefore they make the
-wrong trade-offs in cost and scalability. As a result, small operations may be
+wrong trade-offs in cost and scalability. As a result, small publishers may be
 paying 100x more than they need to, for a system that is prone to crashing and
-vulnerable to denial of service attacks. Large operations are losing millions.
+vulnerable to denial of service attacks. Large publishers are losing millions.
 
 Why Bother? Does the world really need yet another CMS? I think it does.
 
@@ -46,7 +46,7 @@ You need to pay not only for servers and bandwidth but for expertise in software
 maintenance and network security, or your entire business could go up in smoke.
 
 This is a significant issue for non-profits who need to leverage the instant,
-worldwide communication capabilities of the web while putting every dollar of of
+worldwide communication capabilities of the web while putting every dollar of
 their limited funds to the most efficient use.
 
 It is a major problem for small enterprises whose business is driven more and
@@ -82,7 +82,7 @@ hypotheses of the Blue Bucket Project:
 * [Jobs of an Integrated CMS]()
 * [Static Site Generators]()
 * [Design of a Static CMS]()
-* [Design of a Typical Dynamic CMS]()
+* [Design of a Typical Dynamic CMS](a0-dynamic-cms.html)
 * [Common Modifications to the Dynamic Model for Scalability and Reliability]()
 * [Blue Bucket architecture](p0-architecture-1.html)
 * [Content types and metadata attributes](p0-types.html)
@@ -95,11 +95,10 @@ hypotheses of the Blue Bucket Project:
 ### Phase 1: Archive and Basic Transformation
 * [Setting up an S3 bucket as a web site](p1-setup-s3.html)
 * A Site Configuration File for Blue Bucket Sites
-* Implement a Scribe for YAML->JSON.
+* Implement a Scribe for JSON->HTML
 * Implement a Scribe for Markdown->JSON.
-* Utilities for S3 and Lambda.
-* Implement a Scribe that produces HTML using Jinja2 templates.
 * Introduce the POSH template set and style sheet.
+* Utilities for S3 and Lambda.
 
 ### Phase 2: Content Index and Site Structure
 * Producing a Catalogue of the content.
