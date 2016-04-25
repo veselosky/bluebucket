@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Blue Bucket Project</title>
+
+    <!-- Bootstrap -->
+    <!-- Latest compiled and minified CSS -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+
+<!-- Optional theme -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css" integrity="sha384-fLW2N01lMqjakBkx3l/M9EahuwpSfeNvV63J5ezn3uZzapT0u7EYsXMjQV+0En5r" crossorigin="anonymous">
+
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+<style>main {margin-top: 4em;}
+</style>
+  </head>
+  <body role="document">
+  <!-- Fixed navbar -->
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="#">Blue Bucket Project</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li class="active"><a href="#">Home</a></li>
+            <li><a href="#about">About</a></li>
+            <li><a href="#contact">Contact</a></li>
+            <li class="dropdown">
+              <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Dropdown <span class="caret"></span></a>
+              <ul class="dropdown-menu">
+                <li><a href="#">Action</a></li>
+                <li><a href="#">Another action</a></li>
+                <li><a href="#">Something else here</a></li>
+                <li role="separator" class="divider"></li>
+                <li class="dropdown-header">Nav header</li>
+                <li><a href="#">Separated link</a></li>
+                <li><a href="#">One more separated link</a></li>
+              </ul>
+            </li>
+          </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+
+    <main class="container" role="main">
+
+    <div id="sign-in-form-container" class="row">
+        <div class="col-md-4">
+      <form id="sign-in-form" class="form-signin" action="#">
+        <h2 class="form-signin-heading">Please sign in</h2>
+        <p id="signin-error" class="error hidden">You need to supply your AWS credentials.</p>
+        <label for="aws_access_key_id" class="sr-only">AWS Access Key ID</label>
+        <input id="aws_access_key_id" class="form-control" placeholder="AWS Access Key ID" required autofocus>
+        <label for="aws_secret_key" class="sr-only">AWS Secret Key</label>
+        <input type="password" id="aws_secret_key" class="form-control" placeholder="AWS Secret Key" required>
+        <div class="checkbox">
+            <select id="aws_region" name="aws_region">
+                <option value="us-east-1" selected>us-east-1</option>
+                <option value="us-west-2">us-west-2</option>
+                <option value="eu-west-1">eu-west-1</option>
+            </select>
+        </div>
+        <button class="btn btn-lg btn-primary btn-block" type="submit">Sign in</button>
+      </form>
+        </div>
+    </div>
+
+    <div id="bucket-manager-container" class="row">
+    </div>
+
+    </main>
+
+<!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+<script src="https://code.jquery.com/jquery-1.12.3.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
+<script src="https://sdk.amazonaws.com/js/aws-sdk-2.3.5.min.js"></script>
+<!-- Handle login form -->
+<script>
+var testvar = {};
+var bluebucket = {
+    handle_sign_in: function (event) {
+        bluebucket.aws_access_key_id = $('#aws_access_key_id').val();
+        bluebucket.aws_secret_key = $('#aws_secret_key').val();
+        bluebucket.aws_region = $('#aws_region').val();
+        if (bluebucket.aws_access_key_id && bluebucket.aws_secret_key) {
+            $('#signin-error').addClass("hidden");
+            window.localStorage['aws_access_key_id'] = bluebucket.aws_access_key_id;
+            window.localStorage['aws_secret_key'] = bluebucket.aws_secret_key;
+            window.localStorage['aws_region'] = bluebucket.aws_region;
+        } else {
+            $('#signin-error').removeClass("hidden");
+        }
+        event.preventDefault();
+        return false; 
+    },
+    load_credentials_from_storage: function () {
+        bluebucket.aws_access_key_id = window.localStorage['aws_access_key_id'];
+        bluebucket.aws_secret_key = window.localStorage['aws_secret_key'];
+        bluebucket.aws_region = window.localStorage['aws_region'];
+        if (bluebucket.aws_access_key_id && bluebucket.aws_secret_key) {
+            AWS.config.update({
+                accessKeyId: bluebucket.aws_access_key_id,
+                secretAccessKey: bluebucket.aws_secret_key
+            });
+            AWS.config.region = bluebucket.aws_region;
+            return true
+        } else {
+            return false
+        }
+
+    },
+};
+$(document).ready( function () {
+    $('#sign-in-form').on('submit', bluebucket.handle_sign_in);
+    if (bluebucket.load_credentials_from_storage()) {
+        $('#sign-in-form-container').addClass('hidden');
+    } else {
+        $('#sign-in-form-container').removeClass('hidden');
+    }
+});
+</script>
+  </body>
+</html>
