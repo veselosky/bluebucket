@@ -83,7 +83,11 @@ artifact.
 At the center of the blue bucket architecture is the Archive, the S3 bucket (or
 directory) where the content is kept. The things we store in the Archive we
 shall call Artifacts. Artifacts come in several types, defining their role in
-the system.
+the system. Here is a high-level overview of how the Archive is organized.
+
+![How the archive is organized](images/BlueBucketOverview.png)
+
+### Archetypes
 
 The most important Artifact in the Blue Bucket system is the Archetype. The
 Archetype is a JSON-formatted file representing each page, article, photo, or
@@ -92,32 +96,144 @@ store structured data about our content as well as unstructured content itself,
 and 2) we want a format that will be usable by our client JavaScript
 applications.
 
-Our web site will be produced by AWS Lambda functions following rules that we
-set up. The key rule is that each Archetype added to the archive will be
-combined with a Template to produce a Monograph.
+Archetypes are kept in their own directory, and have a `.json` extension. This
+makes it easy to create S3 event sources that target only Archetypes. When an
+Archetype is saved or deleted, S3 sends the event to a Scribe, an AWS Lambda
+function. The Scribe will then generate website assets for the Archetype.
+Typically, it will do this by combining the Archetype with a Template to produce
+a *Monograph,* a web page, though different archetypes may produce other assets.
 
-## Indexes
+### Drafts
+
+For works in progress, we have a Drafts folder. Drafts are stored in the same
+format as Archetypes. Like Archetypes, there is a Scribe watching for change
+events in the Drafts folder, and it will generate Preview assets on changes so
+that you can view your work as it will appear on the website proper.
+
+CAVEAT: In version 0.1, **the Drafts folder is publicly accessible.** Although
+Drafts are not advertised or exposed on the website proper, it would be trivial
+for an Internet visitor to get access to them, if they know their way around the
+Blue Bucket Archive, and nothing in the system prevents them from viewing them.
+Private drafts are on the roadmap for future development.
+
+### Indexes
 
 Aside from data storage, another useful function of a database is to create
-indexes over all the objects in your archive. However, just like web pages,
-indexes can be pre-generated at publish time and stored in the archive in a
-static file. We're going to do exactly that, storing our indexes as JSON files,
+indexes over all the objects in your archive. Indexes are quite useful when you
+want to create ordered collections, or to search and filter your collections to
+find specific content.
+
+However, just like web pages, indexes can be pre-generated at publish time and
+stored in the archive in a static file (in fact, that's how databases work
+internally). Blue Bucket does exactly that, storing our indexes as JSON files,
 and making them available to our JavaScript clients just like the rest of our
-data.
+data. Blue Bucket creates indexes over both Archetypes and Drafts.
 
-Useful indexes for a personal blog might include:
-
-* All objects by date
-* Objects by category, then by date
-* Objects by item type, then by date
-
-For a multi-author media site, you might add other indexes, such as by author.
-
-If you have a very high publishing velocity (periods where you are publishing
-more than one item per second) you may find that the index files become a
+In deployments with a very high publishing velocity (periods of publishing
+more than one item per second) the index files may become a
 bottleneck, because more than one Lambda function may be trying to update them
-at once. If this happens, you will want to resolve it by sharding the index;
-that is, by splitting the index across more than one file. (You'll want to do
-this anyway, as your index files may become very large and start to present a
-performance problem.) An alternative would be to rebuild indexes on a schedule
-instead of on every change (e.g. once per minute).
+at once. In future versions, Blue Bucket may introduce the option to use
+DynamoDB or an SQL database to manage indexes and deal with write contention. In
+that case, the JSON index files would be rebuilt on a schedule, perhaps once a
+minute, resulting in some publishing latency. However, real life usage is likely
+not to hit these limits in the near term.
+
+In publishing operations with very large archives, these index files could grow
+quite large, which may result in performance problems for clients. Future
+versions of Blue Bucket will resolve this issue by sharding the index;
+that is, by splitting the index across more than one file, in such a way that
+clients will typically require access to only a small number of shards.
+
+(Technical side note: I experimentally created an index of 40,000 items,
+equivalent of a blog that posted 10 times a day for 10 years. This resulted in
+an index file of about 10MB uncompressed. Updates to this index took about 2.5
+seconds, which is still well within the usable range for such a blog. However,
+clients needing access to the index might have difficulty grabbing such a large
+file, especially mobile clients.)
+
+In version 0.1, Scribes are pulling double duty as Indexers. In future versions,
+these roles may be separated into different agents.
+
+### Curators
+
+A Curator is any agent that places content into (or removes content from) the
+Archive. This may include content publishing tools, or feed import scripts.
+Typically, a Curator will write content to the Drafts folder, and then request
+the Publisher to publish it for them (see under process architecture below).
+However, there may be cases where Curators write directly to the Archetypes
+folder or the main website. In future versions of Blue Bucket, we will examine
+these use cases and adjust as needed. Blue Bucket has a folder for storing
+Curators.
+
+Version 0.1 of Blue Bucket comes with a Curator: an embarrassingly basic
+browser-based publishing application. This version is meant more as a proof of
+concept and testing tool rather than a real interface for production use. Future
+versions will ship with additional Curators. 
+
+Notice, however, that the publishing tools are cleanly separated from the rest
+of the system. A Curator interacts with the Archive through simple APIs and JSON
+files. In the same way that a typical website management tool allows you to
+install themes that modify the look and feel of your website, Blue Bucket allows
+pluggable administration tools.
+
+Future versions of Blue Bucket will expose an HTTP publishing API (via AWS API
+Gateway), allowing external Curators to help manage Archive content as well.
+
+### Themes
+
+A Theme is a collection of assets used by Scribes or clients to format your
+website. A typical Theme will consist of HTML page templates, CSS files,
+JavaScript files, and image assets. As with most web publishing systems, Blue
+Bucket Themes are pluggable.
+
+Version 0.1 of Blue Bucket ships with a minimalist Theme that should be useful
+as proof of concept and testing, but probably is not useful for a real public
+website. Future versions of Blue Bucket will elaborate extensively on the Theme
+architecture to ensure Theme developers have a great experience building for the
+platform.
+
+Version 0.1 has several technical constraints that will be loosened in future
+versions. Chief among these is that it must use Jinja2 templates. I chose this
+template system only because it is one I am familiar with. However, Blue Bucket
+in future should support pluggable template systems, so that a Theme developer
+could build Templates in a language of their choice.
+
+
+## The Agent Model
+
+An important aspect of the Blue Bucket architecture is that it is an agent-based
+system. Each function of the system is an independent agent (a microservice, to
+use a buzzword), that communicates with other agents via simple protocols and
+messages. An interesting and intentional consequence of this is that agents can
+be implemented in any programming language supported by the underlying platform.
+This AWS implementation using Lambda functions can therefore have agents written
+in JavaScript, Java, or Python (at the time of this writing, more to come no
+doubt).
+
+As we expose more HTTP APIs in future versions, certain functions can be
+implemented external to the system, opening even more possibilities of
+development platform.
+
+The architecture should also be portable to different platforms. I have chosen
+to build on AWS because it is the most mature provider of utility computing
+service. However, the architecture should work just as well on Google Cloud
+Platform or Azure or any other platform that provides the building blocks. With
+a little effort, you could adapt it to work on a personal Linux server using a
+standard file system and inotify.
+
+In version 0.1 the code is not pluggable enough to swap out platforms easily.
+However, I have made an effort to isolate platform-dependent functions to make
+future porting easier. Key issues are the input-output functions for managing
+the Archive, which have mostly been isolated to the archivist class, and the
+details of interpreting event messages, which still needs to be abstracted.
+
+## Workflows
+
+### Creating a draft
+
+![Draft workflow](images/NewArticleDraft.png)
+
+### Publishing a draft
+
+![Draft workflow](images/Publish.png)
+
