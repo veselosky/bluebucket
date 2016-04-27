@@ -1,0 +1,44 @@
+Title Install Blue Bucket to New AWS Account
+Browser<->DistBucket: Load Bucket Manager
+note left of Browser
+User enters AWS
+credentials
+end note
+Browser<->AWS API: Lambda.listFunctions()
+note left of Browser
+Check for BB
+Functions. Not found.
+end note
+Browser<->AWS API: IAM.createRole(BBLambdaRole)
+Browser<->AWS API: IAM.putRolePolicy(BB Permissions)
+note left of Browser
+Permit Lambda to access
+Cloudwatch logs, S3,
+Lambda, API Gateway
+end note
+Browser<->AWS API: Lambda.createFunction(BBUpdater)
+
+Browser->+λBBUpdater: invoke (sync)
+λBBUpdater<->DistBucket: GET BB function list (latest)
+λBBUpdater<->AWS API: Lambda.listFunctions()
+loop per function
+note right of AWS API
+Updater installs and publishes
+all BB Lamda functions
+end note
+λBBUpdater->+AWS API: Lambda.createFunction(BB ALL)
+AWS API<->DistBucket: AWS retrieves zips
+AWS API->-λBBUpdater: Completed
+end loop
+λBBUpdater<->AWS API: Lambda.addPermission(S3)
+note left of AWS API
+Permit S3 to invoke
+Lambda functions
+end note
+λBBUpdater->-Browser: Update complete
+
+note left of Browser
+Installation complete.
+Forward user to 
+Bucket Manager.
+end note
