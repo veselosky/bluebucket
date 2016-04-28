@@ -229,6 +229,45 @@ details of interpreting event messages, which still needs to be abstracted.
 
 ## Workflows
 
+### Installing Blue Bucket in a new AWS account
+
+![Install Blue Bucket in a new AWS account](images/InstallNewAccount.png)
+
+Some important facts/constraints to understand:
+
+- AWS S3 API does not enable CORS. This means you cannot reliably access S3 API
+  functions from the browser client. Some S3 functions will have to be
+  implemented as Lambdas invoked from the browser.
+- Lambda function names are scoped to the account, so everyone can have the same
+  BB function names. The updater relies on these names being consistent.
+- S3 Bucket names are global, not scoped to the account, so the BB code cannot
+  know by hard-coded names what bucket(s) it needs to manage. Since it also has
+  no data store other than S3, the Updater must scan all buckets to find managed
+  ones. This could be a performance problem if an account has a large number of
+  buckets. This is only a problem for the Updater. Other functions are invoked
+  with a bucket argument.
+- All buckets in the account will have to use the same version of the Lambda
+  functions. Could make upgrades troublesome in future. Take care.
+
+The bucket initializer can run on any domain anywhere. I’ll host one publicly.
+
+- LOGIN If no credentials found in local storage, display LOGIN FORM. Ask for
+  AWS key and secret. Store locally, do not send to source server.
+- Browser calls Lambda.listFunctions() to ensure BB functions are available. If
+  required functions are missing, we need to go through the update process.
+- Browser Calls IAM.createRole() to create a role for BB Lambda functions to
+  assume.
+- Browser Calls IAM.putRolePolicy() to permit the BB Lambda functions to access
+  Cloudwatch logs, S3, Lambda, and API Gateway. Later maybe add other services
+  like DynamoDB, Route53, etc.
+- Browser Calls Lambda.createFunction (or UpdateFunctionCode) to install the
+  latest BB Updater Lambda function.
+- Browser Invokes (sync) the BB Updater to complete the installation.
+- BB Updater calls Lambda.addPermission() to allow S3 to invoke functions.
+  (Note: This is a call to the Lambda API, NOT the IAM API.)
+- BB Updater installs all BB Lambda functions.
+- BB Updater scans for managed buckets to upgrade, but finds none.
+
 ### Creating a draft
 
 ![Draft workflow](images/NewArticleDraft.png)
