@@ -32,10 +32,24 @@ end note
 AWS API<->DistBucket: AWS retrieves zips
 AWS API->-λBBUpdater: Completed
 end loop
+λBBUpdater<->AWS API: List Buckets
+loop per managed bucket
+  note right of AWS API
+  Updater updates admin, theme
+  files in each managed bucket
+  end note
+  λBBUpdater<->AWS API: GET bucket config
+  loop per updated file
+  λBBUpdater->+AWS API: COPY DistBucket to Target Bucket
+  AWS API<->DistBucket: AWS copies files
+  AWS API->-λBBUpdater: Completed
+  end loop
+end loop
+
 λBBUpdater->-Browser: Update complete
 
 note left of Browser
 Installation complete.
-Forward user to 
+Forward user to
 Bucket Manager.
 end note
