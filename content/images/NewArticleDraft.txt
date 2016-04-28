@@ -1,0 +1,31 @@
+Title New Article Draft
+opt Edit existing
+    Browser<->S3: GET Organizer
+    Browser<->S3: GET Existing Draft
+end
+Browser<->S3: GET Composer
+note left of Browser
+User edits draft
+end note
+Browser->+λSave: invoke Save(Draft)
+note right of λSave
+Validation
+end note
+λSave->S3: PUT Draft
+S3->>+λDraftPreview: Event: ObjectCreated(Draft)
+λSave<->S3: GET DraftsIndex
+λSave->S3: PUT DraftsIndex
+S3->>λIndexUpdated: Event: ObjectCreated(DraftsIndex)
+note right of λIndexUpdated
+Ignored
+end note
+λSave->-Browser: Success
+λDraftPreview<->S3: GET Template
+note right of λDraftPreview
+Render template
+end note
+λDraftPreview->-S3: PUT Preview html
+note left of S3
+HTML files not subscribed
+No event triggered
+end note

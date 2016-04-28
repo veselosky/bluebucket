@@ -1,0 +1,41 @@
+Title Update Blue Bucket in AWS Account
+Browser<->DistBucket: Load Bucket Manager
+note left of Browser
+User enters AWS
+credentials
+end note
+Browser<->AWS API: Lambda.listFunctions()
+
+Browser->+λBBUpdater: invoke (sync) Query Updates
+λBBUpdater<->DistBucket: GET BB function list (latest)
+λBBUpdater<->AWS API: Lambda.listFunctions()
+note left of λBBUpdater
+Diff by sha256 to identify potential
+updates. Only need the two lists.
+end note
+λBBUpdater->-Browser: Available Updates
+
+note left of Browser
+User elects to install
+updates.
+end note
+
+Browser->+λBBUpdater: invoke (sync)
+λBBUpdater<->DistBucket: GET BB function list (latest)
+λBBUpdater<->AWS API: Lambda.listFunctions()
+loop per function
+note right of AWS API
+Updater installs and publishes
+all BB Lamda functions
+end note
+λBBUpdater->+AWS API: Lambda.updateFunctionCode(BB ALL)
+AWS API<->DistBucket: AWS retrieves zips
+AWS API->-λBBUpdater: Completed
+end loop
+λBBUpdater->-Browser: Update complete
+
+note left of Browser
+Installation complete.
+Forward user to 
+Bucket Manager.
+end note
