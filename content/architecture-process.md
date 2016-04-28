@@ -270,7 +270,7 @@ The bucket initializer can run on any domain anywhere. I’ll host one publicly.
 
 ### Setup a Blue Bucket Site
 
-![Sequence Diagram: Setup a Bucket](images/InstallNewAccount.png)
+![Sequence Diagram: Setup a Bucket](images/SetupBucket.png)
 
 - Browser invokes Lambda BBListBuckets to retrieve buckets metadata and Display the BUCKET MANAGEMENT FORM. NOTE: Version 0.1 does not support initializing non-empty buckets. Metadata returned must include whether bucket is empty.
 - User selects or names a bucket to initialize (and create if it does not already exist). NOTE: Version 0.1 does not support initializing non-empty buckets.
