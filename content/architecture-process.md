@@ -281,11 +281,54 @@ The bucket initializer can run on any domain anywhere. I’ll host one publicly.
 - BBSetupBucket registers S3 Event Sources for BB Lambdas. (NOTE: This is a call to S3 API, not Lambda.)
 - JS will redirect you to the admin section of your new blue bucket. You must enter your creds again because of cross-domain security.
 
+### Updating Blue Bucket software in existing installation
+
+![Sequence Diagram: Update Blue Bucket](images/UpdateExistingAccount.png)
+
+- LOGIN If no credentials found in local storage, display LOGIN FORM. Ask for
+  AWS key and secret. Store locally, do not send to source server.
+- Browser calls Lambda.listFunctions() to ensure BB functions are available. If
+  required functions are missing, we need to go through the update process.
+- Browser Invokes (sync) the BB Updater in Query mode to determine whether any
+  components need update. If yes, update offer presented to user. User elects to
+  update.
+- BB Updater calls Lambda.listFunctions() to get metadata about installed
+  functions. This includes a SHA256 checksum of the installed code package.
+- BB Updater GETs a metadata file from the public distribution bucket containing
+  SHA256 checksums of the latest release. Using the checksums from both lists,
+  it calculates whether any functions need updating.
+- Browser Invokes (sync) the BB Updater in update mode.
+- BB Updater repeats steps 4-6 to calculate what needs updating again (because
+  this is a separate invocation and there’s no saved state).
+- For each Lambda requiring update, BB Updater calls Lambda.UpdateFunctionCode,
+  pointing to the latest zip in the public distribution bucket.
+- BB Updater scans for managed buckets to upgrade. For each bucket, it retrieves
+  a metadata file indicating the versions of each Admin and Theme component
+  installed in the bucket. Each release of these components needs to contain a
+  checksum file, allowing the updater to determine exactly which files need
+  update. (Bonus for security if we can sign that.)
+- For each file needing update, BB Updater issues a s3.copyObject() request to
+  copy the latest version from the public distribution bucket to the target
+  bucket. (ISSUE: This creates a mixed-version problem during deployment. For
+  zero downtime, zero error, atomic deployment, we need to name each file with a
+  checksum, and change the referencing HTML files last. This implies a
+  post-deploy cleanup process to remove files from the old version. When we get
+  to polishing for enterprise, we’ll need to address this.)
+- Update complete. Browser reloads to get latest admin.
+
+Implementation note: This function is IO bound, and would benefit from Node’s
+non-blocking IO. Doing this in Python 2.7 (only Python available in Lambda at
+the moment) will be much harder to parallelize. Doing it serially will just eat
+up run time blocking on IO, which we’re paying for by the 100ms in Lambda. The
+total cost of updates will still be pretty low, but if we can gain efficiency
+just by implementing the same thing in Node, seems like we should.
+
+
 ### Creating a draft
 
-![Draft workflow](images/NewArticleDraft.png)
+![Sequence Diagram: Draft workflow](images/NewArticleDraft.png)
 
 ### Publishing a draft
 
-![Draft workflow](images/Publish.png)
+![Sequence Diagram: Publish workflow](images/Publish.png)
 
