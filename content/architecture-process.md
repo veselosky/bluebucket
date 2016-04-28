@@ -229,10 +229,6 @@ details of interpreting event messages, which still needs to be abstracted.
 
 ## Workflows
 
-### Installing Blue Bucket in a new AWS account
-
-![Install Blue Bucket in a new AWS account](images/InstallNewAccount.png)
-
 Some important facts/constraints to understand:
 
 - AWS S3 API does not enable CORS. This means you cannot reliably access S3 API
@@ -248,6 +244,10 @@ Some important facts/constraints to understand:
   with a bucket argument.
 - All buckets in the account will have to use the same version of the Lambda
   functions. Could make upgrades troublesome in future. Take care.
+
+### Installing Blue Bucket in a new AWS account
+
+![Sequnce Diagram: Install Blue Bucket in a new AWS account](images/InstallNewAccount.png)
 
 The bucket initializer can run on any domain anywhere. I’ll host one publicly.
 
@@ -267,6 +267,19 @@ The bucket initializer can run on any domain anywhere. I’ll host one publicly.
   (Note: This is a call to the Lambda API, NOT the IAM API.)
 - BB Updater installs all BB Lambda functions.
 - BB Updater scans for managed buckets to upgrade, but finds none.
+
+### Setup a Blue Bucket Site
+
+![Sequence Diagram: Setup a Bucket](images/InstallNewAccount.png)
+
+- Browser invokes Lambda BBListBuckets to retrieve buckets metadata and Display the BUCKET MANAGEMENT FORM. NOTE: Version 0.1 does not support initializing non-empty buckets. Metadata returned must include whether bucket is empty.
+- User selects or names a bucket to initialize (and create if it does not already exist). NOTE: Version 0.1 does not support initializing non-empty buckets.
+- Browser client displays a BUCKET CONFIG FORM for some common configuration options to generate bluebucket.json.
+- Browser client invokes (sync) Lambda BBSetupBucket with bucket and config.
+- BBSetupBucket retrieves the zip files for admin and theme from the public distribution bucket.
+- BBSetupBucket installs the directory skeleton, admin files, and generated bluebucket.json, into selected bucket.
+- BBSetupBucket registers S3 Event Sources for BB Lambdas. (NOTE: This is a call to S3 API, not Lambda.)
+- JS will redirect you to the admin section of your new blue bucket. You must enter your creds again because of cross-domain security.
 
 ### Creating a draft
 
