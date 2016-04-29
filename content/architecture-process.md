@@ -229,11 +229,106 @@ details of interpreting event messages, which still needs to be abstracted.
 
 ## Workflows
 
+Some important facts/constraints to understand:
+
+- AWS S3 API does not enable CORS. This means you cannot reliably access S3 API
+  functions from the browser client. Some S3 functions will have to be
+  implemented as Lambdas invoked from the browser.
+- Lambda function names are scoped to the account, so everyone can have the same
+  BB function names. The updater relies on these names being consistent.
+- S3 Bucket names are global, not scoped to the account, so the BB code cannot
+  know by hard-coded names what bucket(s) it needs to manage. Since it also has
+  no data store other than S3, the Updater must scan all buckets to find managed
+  ones. This could be a performance problem if an account has a large number of
+  buckets. This is only a problem for the Updater. Other functions are invoked
+  with a bucket argument.
+- All buckets in the account will have to use the same version of the Lambda
+  functions. Could make upgrades troublesome in future. Take care.
+
+### Installing Blue Bucket in a new AWS account
+
+![Sequnce Diagram: Install Blue Bucket in a new AWS account](images/InstallNewAccount.png)
+
+The bucket initializer can run on any domain anywhere. I’ll host one publicly.
+
+- LOGIN If no credentials found in local storage, display LOGIN FORM. Ask for
+  AWS key and secret. Store locally, do not send to source server.
+- Browser calls Lambda.listFunctions() to ensure BB functions are available. If
+  required functions are missing, we need to go through the update process.
+- Browser Calls IAM.createRole() to create a role for BB Lambda functions to
+  assume.
+- Browser Calls IAM.putRolePolicy() to permit the BB Lambda functions to access
+  Cloudwatch logs, S3, Lambda, and API Gateway. Later maybe add other services
+  like DynamoDB, Route53, etc.
+- Browser Calls Lambda.createFunction (or UpdateFunctionCode) to install the
+  latest BB Updater Lambda function.
+- Browser Invokes (sync) the BB Updater to complete the installation.
+- BB Updater calls Lambda.addPermission() to allow S3 to invoke functions.
+  (Note: This is a call to the Lambda API, NOT the IAM API.)
+- BB Updater installs all BB Lambda functions.
+- BB Updater scans for managed buckets to upgrade, but finds none.
+
+### Setup a Blue Bucket Site
+
+![Sequence Diagram: Setup a Bucket](images/SetupBucket.png)
+
+- Browser invokes Lambda BBListBuckets to retrieve buckets metadata and Display the BUCKET MANAGEMENT FORM. NOTE: Version 0.1 does not support initializing non-empty buckets. Metadata returned must include whether bucket is empty.
+- User selects or names a bucket to initialize (and create if it does not already exist). NOTE: Version 0.1 does not support initializing non-empty buckets.
+- Browser client displays a BUCKET CONFIG FORM for some common configuration options to generate bluebucket.json.
+- Browser client invokes (sync) Lambda BBSetupBucket with bucket and config.
+- BBSetupBucket retrieves the zip files for admin and theme from the public distribution bucket.
+- BBSetupBucket installs the directory skeleton, admin files, and generated bluebucket.json, into selected bucket.
+- BBSetupBucket registers S3 Event Sources for BB Lambdas. (NOTE: This is a call to S3 API, not Lambda.)
+- JS will redirect you to the admin section of your new blue bucket. You must enter your creds again because of cross-domain security.
+
+### Updating Blue Bucket software in existing installation
+
+![Sequence Diagram: Update Blue Bucket](images/UpdateExistingAccount.png)
+
+- LOGIN If no credentials found in local storage, display LOGIN FORM. Ask for
+  AWS key and secret. Store locally, do not send to source server.
+- Browser calls Lambda.listFunctions() to ensure BB functions are available. If
+  required functions are missing, we need to go through the update process.
+- Browser Invokes (sync) the BB Updater in Query mode to determine whether any
+  components need update. If yes, update offer presented to user. User elects to
+  update.
+- BB Updater calls Lambda.listFunctions() to get metadata about installed
+  functions. This includes a SHA256 checksum of the installed code package.
+- BB Updater GETs a metadata file from the public distribution bucket containing
+  SHA256 checksums of the latest release. Using the checksums from both lists,
+  it calculates whether any functions need updating.
+- Browser Invokes (sync) the BB Updater in update mode.
+- BB Updater repeats steps 4-6 to calculate what needs updating again (because
+  this is a separate invocation and there’s no saved state).
+- For each Lambda requiring update, BB Updater calls Lambda.UpdateFunctionCode,
+  pointing to the latest zip in the public distribution bucket.
+- BB Updater scans for managed buckets to upgrade. For each bucket, it retrieves
+  a metadata file indicating the versions of each Admin and Theme component
+  installed in the bucket. Each release of these components needs to contain a
+  checksum file, allowing the updater to determine exactly which files need
+  update. (Bonus for security if we can sign that.)
+- For each file needing update, BB Updater issues a s3.copyObject() request to
+  copy the latest version from the public distribution bucket to the target
+  bucket. (ISSUE: This creates a mixed-version problem during deployment. For
+  zero downtime, zero error, atomic deployment, we need to name each file with a
+  checksum, and change the referencing HTML files last. This implies a
+  post-deploy cleanup process to remove files from the old version. When we get
+  to polishing for enterprise, we’ll need to address this.)
+- Update complete. Browser reloads to get latest admin.
+
+Implementation note: This function is IO bound, and would benefit from Node’s
+non-blocking IO. Doing this in Python 2.7 (only Python available in Lambda at
+the moment) will be much harder to parallelize. Doing it serially will just eat
+up run time blocking on IO, which we’re paying for by the 100ms in Lambda. The
+total cost of updates will still be pretty low, but if we can gain efficiency
+just by implementing the same thing in Node, seems like we should.
+
+
 ### Creating a draft
 
-![Draft workflow](images/NewArticleDraft.png)
+![Sequence Diagram: Draft workflow](images/NewArticleDraft.png)
 
 ### Publishing a draft
 
-![Draft workflow](images/Publish.png)
+![Sequence Diagram: Publish workflow](images/Publish.png)
 

@@ -1,0 +1,14 @@
+Title Setup Bucket
+Browser<->DistBucket: GET Bucket Manager
+Browser<->λListBuckets: invoke (sync) to GET Buckets metadata
+
+note left of Browser
+User selects/names bucket,
+fills config form.
+end note
+Browser<->+λSetupBucket: invoke (sync) to initialize bucket
+λSetupBucket<->AWS API: Enable CORS, Versioning, Website
+λSetupBucket<->DistBucket: GET admin package, theme
+λSetupBucket<->AWS API: PUT bucket config, admin/theme files, etc.
+λSetupBucket<->AWS API: Register Event Sources
+λSetupBucket->-Browser: Bucket ready
