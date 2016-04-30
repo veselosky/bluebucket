@@ -326,9 +326,9 @@ just by implementing the same thing in Node, seems like we should.
 
 ### Creating a draft
 
-![Sequence Diagram: Draft workflow](images/NewArticleDraft.png)
+![Message Cascade: Draft workflow](images/doSaveDraft.png)
 
 ### Publishing a draft
 
-![Sequence Diagram: Publish workflow](images/Publish.png)
+![Message Cascade: Publish workflow](images/Publish.png)
 
