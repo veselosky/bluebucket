@@ -7,25 +7,25 @@ Browser<->S3: GET Composer
 note left of Browser
 User edits draft
 end note
-Browser->+λSave: invoke Save(Draft)
-note right of λSave
-Validation
+Browser->+λdoSave: invoke doSave(Draft)
+note right of λdoSave
+Validation, compression
 end note
-λSave->S3: PUT Draft
-S3->>+λDraftPreview: Event: ObjectCreated(Draft)
-λSave<->S3: GET DraftsIndex
-λSave->S3: PUT DraftsIndex
-S3->>λIndexUpdated: Event: ObjectCreated(DraftsIndex)
-note right of λIndexUpdated
-Ignored
-end note
-λSave->-Browser: Success
-λDraftPreview<->S3: GET Template
-note right of λDraftPreview
+λdoSave->S3: PUT Draft
+S3->>+λonDraftUpdated: Event: ObjectCreated(Draft)
+λdoSave->-Browser: Success
+λonDraftUpdated<->S3: GET Template
+note right of λonDraftUpdated
 Render template
 end note
-λDraftPreview->-S3: PUT Preview html
+λonDraftUpdated->S3: PUT Preview html
 note left of S3
 HTML files not subscribed
 No event triggered
+end note
+λonDraftUpdated<->S3: GET DraftsIndex
+λonDraftUpdated->-S3: PUT DraftsIndex
+S3->>λonIndexUpdated: Event: ObjectCreated(DraftsIndex)
+note right of λonIndexUpdated
+Ignored
 end note
