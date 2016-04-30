@@ -330,5 +330,5 @@ just by implementing the same thing in Node, seems like we should.
 
 ### Publishing a draft
 
-![Message Cascade: Publish workflow](images/Publish.png)
+![Message Cascade: Publish workflow](images/doPublish.png)
 
