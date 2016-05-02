@@ -54,6 +54,13 @@ more by digital channels, where downtime or availability problems can have
 direct impact on revenues, and IT costs make up a significant portion of
 overhead and/or cost of goods sold.
 
+With Blue Bucket, I'm aiming to prove that the combination of *simple* open
+source software components, pay-as-you-go cloud services, and good system
+design, can produce a very scalable, very low-cost publishing system. That
+system can be simple enough that it can replace static site generators or
+Wordpress, and scalable enough that it can replace the high-end commercial
+systems used at large media companies.
+
 ## The Objective and Hypothesis
 
 With Blue Bucket, I'm aiming to prove that the combination of *simple* open
@@ -166,128 +173,9 @@ for example an index page.
 A **template** is a file used to perform transformation of an archetype into an
 artifact.
 
-# Content types and metadata attributes
-
-## Content types vs Item types
-
-The term "content type" seems natural to use in a content publishing system, but
-it can get overused. The HTTP header field of the same name defines the MIME
-type of the HTTP message payload, and we want to preserve that data. But there
-is also a higher-order "type." An item could be an Article, an Event, a Person,
-a Photo Gallery, a Shared Link, and so on. To reduce confusion, we will refer to
-this level of type as "item type" and reserve "content type" to refer to the
-MIME type.
-
-For the first phase of our project we will focus on implementing just a simple
-Article item type. Later, we will extend the Blue Bucket project to support
-additional item types.
-
-## Metadata
-
-Here's a little secret about content management systems: they don't actually
-spend much of their time and effort managing content. In real life, mostly what
-they manage is *metadata* about the content that they manage. One of the things
-that makes content management systems so complex is that nobody seems to be able
-to agree on *what* metadata should be managed. As a result, every system for
-managing content seems to reinvent the metadata wheel in a slightly different
-way from the previous one, and every organization has its own subtle
-customizations it wants for its own implementation.
-
-For our system, following the mantra that web standards are our instruction
-manual, we turn to standards to define our metadata scheme. Unfortunately (or
-fortunately) there is no single standard that is universally applied, but there
-are many which are broadly adopted. As it happens, I have done a fairly
-extensive study of such schemes in my work, and I put together this [spreadsheet
-comparing various metadata standards][].
-
-Some key standards that any web publishing system should be aware of are these.
-
-* [Dublin Core][]: This metadata vocabulary is widely used on the web, both in
-  HTML and as an XML namespace in RSS feeds.
-* [OpenGraph Protocol][]: Introduced by Facebook, this metadata vocabulary is
-  used by social media sites to improve discovery and presentation of content.
-* [Schema.org][]: This metadata vocabulary is used by web search engines to
-  improve discovery and presentation of content in search results pages.
-* [RSS2][]: The de facto standard syndication format used by many blog engines.
-* [Atom][]: An alternate syndication format used by blog engines.
-* [Microformats2][]: An ad hoc vocabulary for encoding metadata into HTML.
-
- From that, I culled the common parts and things I know from experience will be
- needed. Then, I pared the list down to the essentials to support the
- functionality in our first two phases of development for Blue Bucket.
-
-The result is the following short list. We will extend this list of supported
-metadata fields in later phases of the project.
-
-* author
-* category (alias: section)
-* description (alias: summary)
-* guid (alias: id, identifier)
-* itemtype
-* published (alias: date)
-* title (alias: name)
-* updated
-
-This is a pretty good start at a metadata vocabulary, which we will extend later
-as we need to. Always, when we need to expand our metadata vocabulary, we will
-return to our standards spreadsheet.
-
-Because web standards are our instruction manual, we want to store the
-archetypes in a standard format. I chose JSON. I could have chosen XML, but JSON
-is easier to work with in JavaScript, and that will come in handy later if we
-want to expose our archetypes to the browser as a kind of API.
-
-[spreadsheet comparing various metadata standards]: https://docs.google.com/spreadsheets/d/1RjlgDBhFIl8uFsZPqz9pD4slwg1H_yJ6ZxApWxcD52Q/edit?usp=sharing
-
-[Dublin Core]: http://dublincore.org/documents/dcmi-terms/
-[OpenGraph Protocol]: http://ogp.me/
-[Schema.org]: https://schema.org/
-[RSS2]: http://www.rssboard.org/rss-specification
-[Atom]: http://tools.ietf.org/html/rfc4287
-[Microformats2]: http://microformats.org/wiki/microformats-2
-
 # Goals of the Blue Bucket Project
 
-## Why Bother?
-
-Does the world really need yet another CMS? I think it does.
-
-I was intrigued by and attracted to the web from the very beginning because I
-saw it as a democratizing technology. On the web, a lone individual and a
-mega-corporation were effectively equal. The platform provided a level playing
-field that allowed the message to stand on its own, to be distributed globally,
-available to all at almost no cost. The average person could not afford to run
-her own television station, but she could easily afford to run her own web site.
-To the site visitor, that site would appear no different from the one "next
-door" built by the giant media company. Finally, everyone could have a voice!
-
-Of course, the practice never quite lived up to the ideal. Building *good* web
-sites required teams of people, and serving the world required racks of servers.
-There always seemed to be this divide between the small scale operations and the
-large scale operations. Handling large scale meant spending big bank.
-
-Open source content management systems like Wordpress and Drupal changed the
-game for small publishers, but even free software costs money to run at scale.
-You need to pay not only for servers and bandwidth but for expertise in software
-maintenance and network security, or your entire business could go up in smoke.
-
-With Blue Bucket, I'm aiming to prove that the combination of *simple* open
-source software components, pay-as-you-go cloud services, and good system
-design, can produce a very scalable, very low-cost publishing system. That
-system can be simple enough that it can replace static site generators or
-Wordpress, and scalable enough that it can replace the high-end commercial
-systems used at large media companies.
-
-## Hypothesis
-
-1. Static generation of browser assets at publish time is superior to dynamic
-   generation at request time, in reliability and cost.
-2. Digital infrastructure has reached utility scale. Organizations will save
-   both time and money leveraging cloud services rather than running their own
-   servers and software (like connecting to the grid vs generating your own
-   electricity).
-
-### Classic CMS vs Blue Bucket
+## Classic CMS vs Blue Bucket
 
 Classic CMS at publish time:
 * store content in database
@@ -472,34 +360,13 @@ capacity, and the incremental costs are very low. In fact, most web sites will
 have such low usage that it will fall under the AWS Free Tier, so DynamoDB is
 basically free unless abused.
 
-# Key Metrics
-
-In running any web property, there is a set of key internal metrics that you
-want to track to understand your system's operational effectiveness. Here's what
-we will be looking at.
-
-* Response time: How long does it take the server to respond to a browser
-  request for an asset. Note this is NOT the same as page load time!
-* Throughput: How many requests per second can your infrastructure reliably
-  serve? Measuring this in S3 could be expensive, so I may defer it.
-* Publishing latency: How long does it take to make content changes available to
-  the public? This is key for some publishing organizations, and is one of the
-  most common trade-offs in large scale systems. For example, using caches can
-  improve response time at the expense of publishing latency.
-* Cost per Publish: How much money does it cost you to publish an item (or a
-  thousand items, since the costs are so small). This number is nearly impossible
-  to calculate in most systems, but AWS allows us to do it.
-* Cost per View: How much money do you spend serving up your assets to the
-  public? Again, in most systems this is almost impossible to measure, but AWS
-  allows you to do it, within some parameters.
-
-At various points along the way, we'll pause and take measurements of these key
-metrics to see how our system is performing.
-
 # Set up an S3 bucket as a web site
 
 We will quickly walk through configuring S3 to be the repository for our Blue
 Bucket NoCMS.
+
+FIXME: Almost certainly, all these steps should be consolidated into a single
+CloudFormation definition and applied all at once. -- Vince
 
 ## First get your tools on
 
