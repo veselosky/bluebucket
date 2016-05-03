@@ -8,12 +8,11 @@ make the right choice.
 Here are some down-to-earth principles used in Blue Bucket's design:
 
 * Web standards are the instruction manual.
-* Cloud services are the magic sauce. Hardware and software are anti-patterns.
-  Minimize use of infrastructure and custom code.
+* Cloud services are the magic sauce. Dedicated hardware and custom software are
+  anti-patterns; minimize their use.
 * Small pieces, loosely joined, are better than big, complex tools. Each
   component of the system should have only one task, and should perform that
-  task very well.
-  Also known as the [Single Responsibility Principle][].
+  task very well. Also known as the [Single Responsibility Principle][].
 * The file system is the canonical repository. Every artifact of the site is
   stored in, or derived from, flat files. An end
   user should be able to reproduce the entire system given the repository.
@@ -45,76 +44,121 @@ S3 is the **archive**, the repository where all your materials are kept.
 Conveniently, S3 stores items in what it calls "buckets." We'll just paint ours
 blue!
 
-Files stored in our archive are either **sources** or **artifacts**. Sources get
-uploaded by external agents called **curators**. Artifacts get created by
-**scribes**, agents implemented as Lambda functions.
+Files stored in our archive are **assets**. Assets may be uploaded by external
+agents called **curators**. Assets uploaded by curators are called **sources**.
+Other assets may be created by our internal processes.  Internal processes that
+create assets are called **scribes**, and the assets they create are called
+**artifacts**.
 
 An **item** is a generic, abstract *thing* that we want to store in our archive.
-An item may have many different artifacts in the archive that represent it. For
+An item may have many different assets in the archive that represent it. For
 example, an item might be a picture. In the archive, that item might be
 represented as a PNG image file, *and* as a smaller thumbnail image, *and* as an
 HTML page that features that image in its body content, *and* as a JSON file
-storing metadata about the picture. All these artifacts represent the same item,
+storing metadata about the picture. All these assets represent the same item,
 the picture.
 
-An **archetype** is the canonical representation of an item in our archive. We
-will store them as JSON files. Each source item is transformed into one or more
-archetypes. All other artifacts are derived from the archetype.
-
-An **asset** is an artifact associated with an archetype. Typically, an
-archetype will store metadata about the content and a pointer to one or more
-assets. The asset will store the actual content of the item. Sometimes this will
-be identical to the source (e.g. if the source is a PDF file). Other time is
-will be different (e.g. the HTML fragment produced from a Markdown source).
-
-A **monograph** is a generated artifact derived from a single archetype, for
-example an article page.
-
-An **anthology** is a generated artifact derived from more than one archetype,
-for example an index page.
+An **archetype** is the canonical representation of an item in our archive.
+Archetypes are stored as JSON files in a dedicated subdirectory. An archetype
+contains metadata about the item, and pointers to all its assets. Archetypes are
+the key assets of the Blue Bucket system, and their manipulation drives many of
+the processes, as explained below.
 
 A **template** is a file used to perform transformation of an archetype into an
 artifact.
 
 [Single Responsibility Principle]: https://en.wikipedia.org/wiki/Single_responsibility_principle
 
-## The Archive, Artifacts, and Scribes
+## Overview of Typical Workflow
 
 At the center of the blue bucket architecture is the Archive, the S3 bucket (or
-directory) where the content is kept. The things we store in the Archive we
-shall call Artifacts. Artifacts come in several types, defining their role in
-the system. Here is a high-level overview of how the Archive is organized.
+directory) where the content is kept. All assets of your website are stored in
+the bucket. All assets needed by the system to maintain your website are stored
+in the bucket. Here is a high-level overview of how the Archive is organized and
+the concept of the system's operation.
 
 ![How the archive is organized](images/BlueBucketOverview.png)
 
-### Archetypes
+### Archetypes and Scribes
 
-The most important Artifact in the Blue Bucket system is the Archetype. The
+The most important asset in the Blue Bucket system is the Archetype. The
 Archetype is a JSON-formatted file representing each page, article, photo, or
 other content item on our web site. We use the JSON format because 1) we want to
 store structured data about our content as well as unstructured content itself,
-and 2) we want a format that will be usable by our client JavaScript
+and 2) we want a format that will be easily usable by our client JavaScript
 applications.
 
-Archetypes are kept in their own directory, and have a `.json` extension. This
-makes it easy to create S3 event sources that target only Archetypes. When an
-Archetype is saved or deleted, S3 sends the event to a Scribe, an AWS Lambda
-function. The Scribe will then generate website assets for the Archetype.
-Typically, it will do this by combining the Archetype with a Template to produce
-a *Monograph,* a web page, though different archetypes may produce other assets.
+Archetypes are kept in their own directory, organized by the *item class,* and
+have a `.json` extension. This makes it easy to create S3 event sources that
+target only Archetypes. 
 
-### Drafts
+There is a fixed set of supported item classes, as depicted in the diagram. They
+are:
+
+* Article: a text/html item intended to be displayed as a stand-alone web page.
+* Audio: an audio item.
+* File: a generic item that does not fall into any other class (e.g. a zip
+  file for download).
+* Embed: a text/html item that may be used as a component in a web page, but is
+  not intended to stand alone. This may be third party content, like a YouTube
+  video embed, or local content like an interactive data visualization.
+* Image: a picture or graphic.
+* Video: a video item stored locally (third party videos should be Embeds).
+
+When an Archetype is saved or deleted, S3 sends an event message to a Topic in
+the Simple Notification Service. Each item class has two topics that can be
+monitored, one for Save events, and one for Delete events.
+
+Software agents called Scribes (AWS Lambda functions) subscribe to these events
+and are notified when something in the archive changes. The Scribe will then
+generate artifacts to be presented on the website. For example, if the archetype
+was an Article, the Scribe might get the HTML content, render it using a
+template to produce a full web page, and store that web page back into the
+archive, ready for public view.
 
 For works in progress, we have a Drafts folder. Drafts are stored in the same
-format as Archetypes. Like Archetypes, there is a Scribe watching for change
-events in the Drafts folder, and it will generate Preview assets on changes so
+format as Archetypes. Like Archetypes, there are Scribes watching for change
+events in the Drafts folder, waiting to generate Preview assets on changes so
 that you can view your work as it will appear on the website proper.
 
-CAVEAT: In version 0.1, **the Drafts folder is publicly accessible.** Although
-Drafts are not advertised or exposed on the website proper, it would be trivial
-for an Internet visitor to get access to them, if they know their way around the
-Blue Bucket Archive, and nothing in the system prevents them from viewing them.
-Private drafts are on the roadmap for future development.
+### Curators
+
+A Curator is any agent that places content into (or removes content from) the
+Archive. This may include browser-based content publishing tools, internal feed
+import scripts, or external sources with permission to access our API.
+
+A prototypical workflow for internal curators would be:
+
+- Curator writes the source asset to the general archive, as a Draft (that is,
+  without granting public read permission).
+    - Note: Image, Audio, and Video assets are treated specially, because the
+      system may perform special processing on them. Therefore, they are grouped
+      in the main archive with a common prefix by asset-type.
+    - This is a direct PUT to the S3 bucket, no Lambda functions are directly invoked.
+    - If the upload fails, the curator can alert the user (if interactive) or
+      log an error.
+- Curator writes the archetype (metadata) for the item to the draft archetypes
+  directory for that item class, e.g. `/_A/Draft/Image/<filename>`.
+    - This is done by invoking λdoSave<ItemClass>().
+    - The doSave routines extract embedded metadata from the asset (its key must
+      be provided in the metadata), merge this with user-provided metadata, and
+      PUT the combined archetype to the bucket.
+    - If doSave fails, curator can alert the user (if interactive) or log an
+      error.
+- S3 sends a message to the SNS Topic BBonAddDraftImage.
+- User elects to publish.
+- Curator invokes λdoPublish().
+- doPublish grants public read on asset. Then moves the archetype from Draft to
+  Published location. If either operation fails, the user is alerted (if
+  interactive) or an error is logged.
+- S3 sends a message to the SNS Topic BBonAddImage and BBonDeleteDraftImage.
+
+Notice that the publishing tools are cleanly separated from the rest of the
+system. A Curator interacts with the Archive through simple APIs and JSON files.
+In the same way that a typical website management tool allows you to install
+plugins, Blue Bucket allows pluggable administration tools as well. The major
+work of the system is driven by events triggered after the curator's
+interactions.
 
 ### Indexes
 
@@ -127,16 +171,11 @@ However, just like web pages, indexes can be pre-generated at publish time and
 stored in the archive in a static file (in fact, that's how databases work
 internally). Blue Bucket does exactly that, storing our indexes as JSON files,
 and making them available to our JavaScript clients just like the rest of our
-data. Blue Bucket creates indexes over both Archetypes and Drafts.
+data.
 
-In deployments with a very high publishing velocity (periods of publishing
-more than one item per second) the index files may become a
-bottleneck, because more than one Lambda function may be trying to update them
-at once. In future versions, Blue Bucket may introduce the option to use
-DynamoDB or an SQL database to manage indexes and deal with write contention. In
-that case, the JSON index files would be rebuilt on a schedule, perhaps once a
-minute, resulting in some publishing latency. However, real life usage is likely
-not to hit these limits in the near term.
+Software agents called Indexers subscribe to the SNS add & delete topics for
+each item class. Whenever an archetype is written, the Indexer receives a
+message, and updates the appropriate index files in the bucket.
 
 In publishing operations with very large archives, these index files could grow
 quite large, which may result in performance problems for clients. Future
@@ -151,83 +190,16 @@ seconds, which is still well within the usable range for such a blog. However,
 clients needing access to the index might have difficulty grabbing such a large
 file, especially mobile clients.)
 
-In version 0.1, Scribes are pulling double duty as Indexers. In future versions,
-these roles may be separated into different agents.
+In deployments with a very high publishing velocity (periods of publishing
+more than one item per second) the index files may become a
+bottleneck, because more than one Lambda function may be trying to update them
+at once. In future versions, Blue Bucket may introduce the option to use
+DynamoDB or an SQL database to manage indexes and deal with write contention. In
+that case, the JSON index files would be rebuilt on a schedule, perhaps once a
+minute, resulting in some publishing latency. However, real life usage is likely
+not to hit these limits in the near term.
 
-### Curators
-
-A Curator is any agent that places content into (or removes content from) the
-Archive. This may include content publishing tools, or feed import scripts.
-Typically, a Curator will write content to the Drafts folder, and then request
-the Publisher to publish it for them (see under process architecture below).
-However, there may be cases where Curators write directly to the Archetypes
-folder or the main website. In future versions of Blue Bucket, we will examine
-these use cases and adjust as needed. Blue Bucket has a folder for storing
-Curators.
-
-Version 0.1 of Blue Bucket comes with a Curator: an embarrassingly basic
-browser-based publishing application. This version is meant more as a proof of
-concept and testing tool rather than a real interface for production use. Future
-versions will ship with additional Curators. 
-
-Notice, however, that the publishing tools are cleanly separated from the rest
-of the system. A Curator interacts with the Archive through simple APIs and JSON
-files. In the same way that a typical website management tool allows you to
-install themes that modify the look and feel of your website, Blue Bucket allows
-pluggable administration tools.
-
-Future versions of Blue Bucket will expose an HTTP publishing API (via AWS API
-Gateway), allowing external Curators to help manage Archive content as well.
-
-### Themes
-
-A Theme is a collection of assets used by Scribes or clients to format your
-website. A typical Theme will consist of HTML page templates, CSS files,
-JavaScript files, and image assets. As with most web publishing systems, Blue
-Bucket Themes are pluggable.
-
-Version 0.1 of Blue Bucket ships with a minimalist Theme that should be useful
-as proof of concept and testing, but probably is not useful for a real public
-website. Future versions of Blue Bucket will elaborate extensively on the Theme
-architecture to ensure Theme developers have a great experience building for the
-platform.
-
-Version 0.1 has several technical constraints that will be loosened in future
-versions. Chief among these is that it must use Jinja2 templates. I chose this
-template system only because it is one I am familiar with. However, Blue Bucket
-in future should support pluggable template systems, so that a Theme developer
-could build Templates in a language of their choice.
-
-
-## The Agent Model
-
-An important aspect of the Blue Bucket architecture is that it is an agent-based
-system. Each function of the system is an independent agent (a microservice, to
-use a buzzword), that communicates with other agents via simple protocols and
-messages. An interesting and intentional consequence of this is that agents can
-be implemented in any programming language supported by the underlying platform.
-This AWS implementation using Lambda functions can therefore have agents written
-in JavaScript, Java, or Python (at the time of this writing, more to come no
-doubt).
-
-As we expose more HTTP APIs in future versions, certain functions can be
-implemented external to the system, opening even more possibilities of
-development platform.
-
-The architecture should also be portable to different platforms. I have chosen
-to build on AWS because it is the most mature provider of utility computing
-service. However, the architecture should work just as well on Google Cloud
-Platform or Azure or any other platform that provides the building blocks. With
-a little effort, you could adapt it to work on a personal Linux server using a
-standard file system and inotify.
-
-In version 0.1 the code is not pluggable enough to swap out platforms easily.
-However, I have made an effort to isolate platform-dependent functions to make
-future porting easier. Key issues are the input-output functions for managing
-the Archive, which have mostly been isolated to the archivist class, and the
-details of interpreting event messages, which still needs to be abstracted.
-
-## Workflows
+## Example Workflows
 
 Some important facts/constraints to understand:
 
@@ -247,7 +219,7 @@ Some important facts/constraints to understand:
 
 ### Installing Blue Bucket in a new AWS account
 
-![Sequnce Diagram: Install Blue Bucket in a new AWS account](images/InstallNewAccount.png)
+![Sequence Diagram: Install Blue Bucket in a new AWS account](images/InstallNewAccount.png)
 
 The bucket initializer can run on any domain anywhere. I’ll host one publicly.
 
