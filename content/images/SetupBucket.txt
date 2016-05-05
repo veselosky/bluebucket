@@ -10,5 +10,7 @@ Browser<->+λSetupBucket: invoke (sync) to initialize bucket
 λSetupBucket<->AWS API: Enable CORS, Versioning, Website
 λSetupBucket<->DistBucket: GET admin package, theme
 λSetupBucket<->AWS API: PUT bucket config, admin/theme files, etc.
-λSetupBucket<->AWS API: Register Event Sources
+λSetupBucket<->AWS API: Create SNS Topics
+λSetupBucket<->AWS API: Register S3 Event Sources
+λSetupBucket<->AWS API: Create Lambda SNS Subscriptions
 λSetupBucket->-Browser: Bucket ready

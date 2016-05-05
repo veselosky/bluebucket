@@ -14,8 +14,8 @@ Here are some down-to-earth principles used in Blue Bucket's design:
   component of the system should have only one task, and should perform that
   task very well. Also known as the [Single Responsibility Principle][].
 * The file system is the canonical repository. Every artifact of the site is
-  stored in, or derived from, flat files. An end
-  user should be able to reproduce the entire system given the repository.
+  stored in, or derived from, flat files. An end user should be able to
+  reproduce the entire system given the repository.
 
 These are our values, the outcomes we desire from our architecture:
 
@@ -60,9 +60,9 @@ the picture.
 
 An **archetype** is the canonical representation of an item in our archive.
 Archetypes are stored as JSON files in a dedicated subdirectory. An archetype
-contains metadata about the item, and pointers to all its assets. Archetypes are
-the key assets of the Blue Bucket system, and their manipulation drives many of
-the processes, as explained below.
+contains metadata about the item, and (usually) pointers to all its assets.
+Archetypes are the key assets of the Blue Bucket system, and their manipulation
+drives many of the processes, as explained below.
 
 A **template** is a file used to perform transformation of an archetype into an
 artifact.
@@ -88,12 +88,12 @@ store structured data about our content as well as unstructured content itself,
 and 2) we want a format that will be easily usable by our client JavaScript
 applications.
 
-Archetypes are kept in their own directory, organized by the *item class,* and
+Archetypes are kept in their own directory, organized by *item class,* and
 have a `.json` extension. This makes it easy to create S3 event sources that
 target only Archetypes. 
 
 There is a fixed set of supported item classes, as depicted in the diagram. They
-are:
+are (alphabetically):
 
 * Article: a text/html item intended to be displayed as a stand-alone web page.
 * Audio: an audio item.
@@ -106,8 +106,8 @@ are:
 * Video: a video item stored locally (third party videos should be Embeds).
 
 When an Archetype is saved or deleted, S3 sends an event message to a Topic in
-the Simple Notification Service. Each item class has two topics that can be
-monitored, one for Save events, and one for Delete events.
+the Simple Notification Service (SNS). Each item class has two topics that can
+be monitored, one for Save events, and one for Delete events.
 
 Software agents called Scribes (AWS Lambda functions) subscribe to these events
 and are notified when something in the archive changes. The Scribe will then
@@ -154,50 +154,86 @@ A prototypical workflow for internal curators would be:
 - S3 sends a message to the SNS Topic BBonAddImage and BBonDeleteDraftImage.
 
 Notice that the publishing tools are cleanly separated from the rest of the
-system. A Curator interacts with the Archive through simple APIs and JSON files.
+system. A Curator interacts with the Archive through simple APIs and files.
 In the same way that a typical website management tool allows you to install
 plugins, Blue Bucket allows pluggable administration tools as well. The major
 work of the system is driven by events triggered after the curator's
 interactions.
 
-### Indexes
+### Indexes and Index Subsets
 
-Aside from data storage, another useful function of a database is to create
-indexes over all the objects in your archive. Indexes are quite useful when you
-want to create ordered collections, or to search and filter your collections to
-find specific content.
+Internally, agents in the Blue Bucket system *could* discover all the content
+available in the archive by listing the files. However, there are several
+disadvantages to using this method for content discovery.
 
-However, just like web pages, indexes can be pre-generated at publish time and
-stored in the archive in a static file (in fact, that's how databases work
-internally). Blue Bucket does exactly that, storing our indexes as JSON files,
-and making them available to our JavaScript clients just like the rest of our
-data.
+* File listings are always sorted lexically (alphabetically) by key, but the
+  most common sort need on the web is reverse chronological.
+* S3 ListObjects calls are as expensive as writes in terms of financial costs,
+  whereas reads are much cheaper.
+* S3 ListObjects calls can only return a fixed set of object metadata. Custom
+  metadata is not returned, nor can the contents of the object be returned.
+  These data must be retrieved separately.
+* S3 allows subsets of listings based only on key prefix. Often, it is desirable to
+  define subsets that are not based on the key prefix.
+* S3 ListObjects calls are not permitted at the website endpoint, so basic
+  JavaScript clients cannot access them.
+
+To address these concerns, Blue Bucket generates indexes to catalog all the
+content in the archive, and stores those indexes as JSON files in the archive
+itself.
 
 Software agents called Indexers subscribe to the SNS add & delete topics for
 each item class. Whenever an archetype is written, the Indexer receives a
-message, and updates the appropriate index files in the bucket.
+message, and updates the appropriate index files in the bucket. 
 
-In publishing operations with very large archives, these index files could grow
-quite large, which may result in performance problems for clients. Future
-versions of Blue Bucket will resolve this issue by sharding the index;
-that is, by splitting the index across more than one file, in such a way that
-clients will typically require access to only a small number of shards.
+There is a separate index for each item class, sorted reverse chronological by
+updated date. 
 
-(Technical side note: I experimentally created an index of 40,000 items,
-equivalent of a blog that posted 10 times a day for 10 years. This resulted in
-an index file of about 10MB uncompressed. Updates to this index took about 2.5
-seconds, which is still well within the usable range for such a blog. However,
-clients needing access to the index might have difficulty grabbing such a large
-file, especially mobile clients.)
+The index records stored in the indexes provide a set of metadata designed
+for typical use cases, including metadata that has been extracted from the
+content of the archetype files, so many common use cases will be able to make do
+with the index record alone, without having to fetch details for individual
+assets.
 
-In deployments with a very high publishing velocity (periods of publishing
-more than one item per second) the index files may become a
-bottleneck, because more than one Lambda function may be trying to update them
-at once. In future versions, Blue Bucket may introduce the option to use
-DynamoDB or an SQL database to manage indexes and deal with write contention. In
-that case, the JSON index files would be rebuilt on a schedule, perhaps once a
-minute, resulting in some publishing latency. However, real life usage is likely
-not to hit these limits in the near term.
+Indexes are paginated to improve performance for large archives. Each page
+contains a pointer to the previous and next page in the index (assuming one
+exists). Clients can traverse the entire index if necessary, but the common use
+case of "most recent X" should be satisfied with the first page.
+
+The indexes are publicly readable, and so can be used by public JavaScript
+clients without AWS API keys, as well as internal agents. (Note: to support
+private drafts, drafts are indexed in a separate file that is not publicly
+readable.)
+
+The financial cost of producing these indexes is the same as performing a single
+ListObjects call. Reading the index is ~14% of the cost of calling ListObjects.
+So as long as you are using it more than once per write, you're saving money.
+But in practice, producing the same results without a saved index would require
+many, many calls to list and retrieve objects, so the comparison is unfair.
+
+In addition to the main indexes, a site configuration can define index subsets
+to be created by the Indexers. An index subset is is a filtered version of the
+index such that each subset contains only items that fit specific criteria. For
+example, it is common to create an index subset based on category, creating one
+JSON file for "category=Technology" and another for "category=Humor". Another
+common use is to create subsets by author. Index subsets are always based on
+some metadata field found in the archetype.
+
+Although the system does not (currently) place any constraints on the fields
+that can be used as the basis for an index subset, to achieve good performance a
+site owner should take care to create subsets only on metadata fields that have
+a constrained number of values. Creating subsets based on a "tags" field, for
+example, would likely create a huge number of files, which would be expensive
+and of limited utility. 
+
+Like the main indexes, index subsets are constrained to contain items of the
+same item class. Site owners may need to declare the same subset on multiple
+classes, for example if they want a per author file for Articles, Audio, Images,
+and Video.
+
+Index subsets take the place of the simplest and most common database queries
+that a dynamic CMS would make. In future versions we will add mechanisms for
+performing more complex query operations.
 
 ## Example Workflows
 
@@ -244,14 +280,24 @@ The bucket initializer can run on any domain anywhere. I’ll host one publicly.
 
 ![Sequence Diagram: Setup a Bucket](images/SetupBucket.png)
 
-- Browser invokes Lambda BBListBuckets to retrieve buckets metadata and Display the BUCKET MANAGEMENT FORM. NOTE: Version 0.1 does not support initializing non-empty buckets. Metadata returned must include whether bucket is empty.
-- User selects or names a bucket to initialize (and create if it does not already exist). NOTE: Version 0.1 does not support initializing non-empty buckets.
-- Browser client displays a BUCKET CONFIG FORM for some common configuration options to generate bluebucket.json.
+- Browser invokes Lambda BBListBuckets to retrieve buckets metadata and Display
+  the BUCKET MANAGEMENT FORM. NOTE: Version 0.1 does not support initializing
+  non-empty buckets. Metadata returned must include whether bucket is empty.
+- User selects or names a bucket to initialize (and create if it does not
+  already exist). NOTE: Version 0.1 does not support initializing non-empty
+  buckets.
+- Browser client displays a BUCKET CONFIG FORM for some common configuration
+  options to generate bluebucket.json.
 - Browser client invokes (sync) Lambda BBSetupBucket with bucket and config.
-- BBSetupBucket retrieves the zip files for admin and theme from the public distribution bucket.
-- BBSetupBucket installs the directory skeleton, admin files, and generated bluebucket.json, into selected bucket.
-- BBSetupBucket registers S3 Event Sources for BB Lambdas. (NOTE: This is a call to S3 API, not Lambda.)
-- JS will redirect you to the admin section of your new blue bucket. You must enter your creds again because of cross-domain security.
+- BBSetupBucket retrieves the zip files for admin and theme from the public
+  distribution bucket.
+- BBSetupBucket installs the directory skeleton, admin files, and generated
+  bluebucket.json, into selected bucket.
+- BBSetupBucket creates any SNS Topics needed for this bucket.
+- BBSetupBucket connects S3 Event Sources to the SNS Topics.
+- BBSetupBucket subscribes configured Lambda functions to the SNS Topics.
+- JS will redirect you to the admin section of your new blue bucket. You must
+  enter your creds again because of cross-domain security.
 
 ### Updating Blue Bucket software in existing installation
 
