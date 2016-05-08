@@ -32,40 +32,56 @@ Some key standards that any web publishing system should be aware of are these.
 
 At the highest level, our system will manage *websites*. A *website,* for our
 purpose, is a collection of web resources associated with a domain. The web
-resources that are managed by our system we will call *assets.* Assets come in
-lots of shapes and sizes and formats. Some classes of asset will require special
-handling by our system, so we'll want to understand the differences.
+resources that are managed by our system we will generically call *Items.* Items
+come in lots of shapes and sizes and formats. Some classes of item will require
+special handling by our system, so we'll want to understand the differences.
 
 The key things we care about are things that will be represented on our website
-as web pages. We call these *content items* or just *items* for short. These
-assets will have an Internet media type of `text/html` and some basic metadata.
-There is an infinite number of things that could be represented by a web page,
-so we will add some structure to this by creating *item types* below. (Note: We
-don't call these "pages," because there will be a lot of pages on our website
-that are not content items. There are index pages, category pages, search
-results pages, etc. Content items are the one-object-per-page variety.)
+as web pages. We will generically call these *Pages*. These Pages will have an
+Internet media type of `text/html` and some basic metadata.  There is an
+infinite number of things that could be represented by a web page, so we will
+add some structure to this by creating *item types* below.
+
+The list of types will expand in the future, but we'll start with a small set of
+common patterns. 
+
+*Articles* are the primary content items we want to track. These are also
+called item detail pages, and typically there is one item per page, or a single
+item is the main focus of the page.
+
+*Anthologies* are pages not focused on a single item, but meant to call reader
+attention to new or featured items. These are often called section pages or
+channel fronts. A site's home page is typically an Anthology.
+
+*Archive pages* are browsable pages that expose, via links, *all* the content of
+the site. These are useful to expose all your content to search engines, but are
+not often used by readers. Some blog sites use Archive pages instead of
+Anthologies.
+
+*Utility pages* do not expose content, but rather expose a function to the site
+visitor. In a pure static architecture, these pages will typically deliver a
+JavaScript application. A site search results page is an example of a Utility
+page. In more advanced sites, these may be dynamic pages.
 
 Other things won't be web pages on our site, but will be used by or embedded in
 web pages. These include images, audio files, video files, and JavaScript
 embeds. It may also include small text objects that don't really rate their own
 web page, but that might be useful in a website; things like notes and tweets.
-Each of these classes may require different kinds of processing, so we'll keep
-them in mind has high-level types to manage.
+We will generically call these *Assets*.
 
-In the early stages of development, we'll focus on text-based content items and
-basic image support. We can use JavaScript embeds in place of video and audio
-assets where we use third party services to manage the media, so we'll be sure
-to support that early on. As the system matures, we can add more specific
-support for audio and video assets.
+In summary, our high-level classes of items are:
 
-In summary, our high-level classes of assets are:
-
-* Content Items (text)
-* Images
-* Embeds
-* Audio
-* Video
-* Snippets (text)
+* Page
+    * Article
+    * Anthology
+    * Archive
+    * Utility
+* Asset
+    * Image
+    * Embed
+    * Audio
+    * Video
+    * File
 
 ## Metadata
 
