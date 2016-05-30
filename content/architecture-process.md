@@ -26,30 +26,59 @@ These are our values, the outcomes we desire from our architecture:
 * Composability is valuable. The system should be interoperable with existing
   systems, preserving user choice of tools.
 
-## Some definitions
+[Single Responsibility Principle]: https://en.wikipedia.org/wiki/Single_responsibility_principle
 
-For this discussion we will be using the metaphor of our system as a
-**library**, and the software processes as **agents** or employees in our
-library.
+## The Archive: An S3 Bucket
 
-I apologize in advance to professionals in the library science field. The
-metaphors I have adopted to describe the Blue Bucket architecture misuse and
-abuse the language of that field. Nevertheless I find the library metaphor, if
-sometimes misapplied, still eases communication and understanding, because it is
-so much easier to talk about Archivists and Scribes than about "repository
-manager" and "format transformer."
+At the heart of the Blue Bucket architecture is the Archive, which is an S3
+bucket configured as a public website. The Archive contains all the web
+resources of your website. It also contains all the data the system needs in
+order to manage your content. S3 serves your website straight from the Archive.
+Blue Bucket processes manage the Archive directly. No database or secondary
+storage is needed (although they can be added as an option). All the Blue Bucket
+processes are stateless; all application state is stored in the Archive.
 
-If this is the digital library of your content, in the Blue Bucket architecture
-S3 is the **archive**, the repository where all your materials are kept.
-Conveniently, S3 stores items in what it calls "buckets." We'll just paint ours
-blue!
+Here is a high-level overview of how the Archive is organized and the concept of
+the system's operation.
 
-Files stored in our archive are **assets**. Assets may be uploaded by external
-agents called **curators**. Assets uploaded by curators are called **sources**.
-Other assets may be created by our internal processes.  Internal processes that
-create assets are called **scribes**, and the assets they create are called
-**artifacts**.
+![How the archive is organized](images/BlueBucketOverview.png)
 
+### Assets, Archetypes, and Artifacts (oh my!)
+
+All the files stored in the Archive fall into one of three types: Assets,
+Archetypes, or Artifacts. All the actions of the system are performed by Agents,
+which fall into the general categories of Curators, Scribes, or Indexers. Here
+are some definitions to aid clear communication.
+
+**Archetypes** are JSON files that store data used by Blue Bucket processes to
+manage the site. This includes metadata about the assets that we manage, as well
+as configuration files for the system. Archetypes are isolated to a specific
+subdirectory in the Archive. Archetypes are the key files of the Blue Bucket
+system, and their manipulation drives many of the processes, as explained below.
+
+**Artifacts** are files produced by Blue Bucket processes (other than
+archetypes).
+
+**Assets** are files uploaded to the Archive by the site producers or
+curators (see below).
+
+**Curators** are agents that upload Assets or Archetypes into the Archive. A
+Curator might be a content production tool driven by a person, or it could be an
+automated process. Curators are triggered manually, or on a fixed schedule, and
+not in response to any system events.
+
+**Indexers** are agents that maintain (you guessed it) indexes of all the files
+in the Archive. The indexes themselves are treated as Archetypes and stored as
+JSON files within the Archive.
+
+**Scribes** are agents that produce Artifacts. A typical Scribe reads an
+Archetype, processes it through a template, and writes the resulting output as
+an Artifact. (Scribes are not constrained to using templates, however; they may
+produce their output in any manner they like.) Scribes are triggered in response
+to system events (usually a change to an Archetype).
+
+[FIXME: Items are part of the Information Architecture, not the process
+architecture.]
 An **item** is a generic, abstract *thing* that we want to store in our archive.
 An item may have many different assets in the archive that represent it. For
 example, an item might be a picture. In the archive, that item might be
@@ -58,26 +87,7 @@ HTML page that features that image in its body content, *and* as a JSON file
 storing metadata about the picture. All these assets represent the same item,
 the picture.
 
-An **archetype** is the canonical representation of an item in our archive.
-Archetypes are stored as JSON files in a dedicated subdirectory. An archetype
-contains metadata about the item, and (usually) pointers to all its assets.
-Archetypes are the key assets of the Blue Bucket system, and their manipulation
-drives many of the processes, as explained below.
-
-A **template** is a file used to perform transformation of an archetype into an
-artifact.
-
-[Single Responsibility Principle]: https://en.wikipedia.org/wiki/Single_responsibility_principle
-
-## Overview of Typical Workflow
-
-At the center of the blue bucket architecture is the Archive, the S3 bucket (or
-directory) where the content is kept. All assets of your website are stored in
-the bucket. All assets needed by the system to maintain your website are stored
-in the bucket. Here is a high-level overview of how the Archive is organized and
-the concept of the system's operation.
-
-![How the archive is organized](images/BlueBucketOverview.png)
+## Deeper Dive
 
 ### Archetypes and Scribes
 
@@ -86,34 +96,25 @@ Archetype is a JSON-formatted file representing each page, article, photo, or
 other content item on our web site. We use the JSON format because 1) we want to
 store structured data about our content as well as unstructured content itself,
 and 2) we want a format that will be easily usable by our client JavaScript
-applications.
+applications. For the most part, these files are intentionally publicly
+readable, because in aggregate they constitute the "read API" for the web site.
+Browser-based JavaScript applications (or native applications on various
+platforms) can access the structured data directly.
 
-Archetypes are kept in their own directory, organized by *item class,* and
-have a `.json` extension. This makes it easy to create S3 event sources that
-target only Archetypes. 
-
-There is a fixed set of supported item classes, as depicted in the diagram. They
-are (alphabetically):
-
-* Article: a text/html item intended to be displayed as a stand-alone web page.
-* Audio: an audio item.
-* File: a generic item that does not fall into any other class (e.g. a zip
-  file for download).
-* Embed: a text/html item that may be used as a component in a web page, but is
-  not intended to stand alone. This may be third party content, like a YouTube
-  video embed, or local content like an interactive data visualization.
-* Image: a picture or graphic.
-* Video: a video item stored locally (third party videos should be Embeds).
+Archetypes are kept in their own directory, organized into subdirectories (more
+about this in the [Information Architecture](ia-ux.md)). Isolating the
+Archetypes keeps them from cluttering up the website, and also makes it
+easy to create S3 event sources that target only Archetypes.
 
 When an Archetype is saved or deleted, S3 sends an event message to a Topic in
 the Simple Notification Service (SNS). Each item class has two topics that can
 be monitored, one for Save events, and one for Delete events.
 
-Software agents called Scribes (AWS Lambda functions) subscribe to these events
-and are notified when something in the archive changes. The Scribe will then
-generate artifacts to be presented on the website. For example, if the archetype
-was an Article, the Scribe might get the HTML content, render it using a
-template to produce a full web page, and store that web page back into the
+Software agents called Scribes (AWS Lambda functions) subscribe to these SNS
+Topics and are notified when something in the archive changes. The Scribe will
+then generate artifacts to be presented on the website. For example, if the
+archetype was an Article, the Scribe might get the HTML content, render it using
+a template to produce a full web page, and store that web page back into the
 archive, ready for public view.
 
 For works in progress, we have a Drafts folder. Drafts are stored in the same
@@ -179,8 +180,7 @@ disadvantages to using this method for content discovery.
   JavaScript clients cannot access them.
 
 To address these concerns, Blue Bucket generates indexes to catalog all the
-content in the archive, and stores those indexes as JSON files in the archive
-itself.
+content in the archive.
 
 Software agents called Indexers subscribe to the SNS add & delete topics for
 each item class. Whenever an archetype is written, the Indexer receives a
@@ -195,45 +195,8 @@ content of the archetype files, so many common use cases will be able to make do
 with the index record alone, without having to fetch details for individual
 assets.
 
-Indexes are paginated to improve performance for large archives. Each page
-contains a pointer to the previous and next page in the index (assuming one
-exists). Clients can traverse the entire index if necessary, but the common use
-case of "most recent X" should be satisfied with the first page.
-
-The indexes are publicly readable, and so can be used by public JavaScript
-clients without AWS API keys, as well as internal agents. (Note: to support
-private drafts, drafts are indexed in a separate file that is not publicly
-readable.)
-
-The financial cost of producing these indexes is the same as performing a single
-ListObjects call. Reading the index is ~14% of the cost of calling ListObjects.
-So as long as you are using it more than once per write, you're saving money.
-But in practice, producing the same results without a saved index would require
-many, many calls to list and retrieve objects, so the comparison is unfair.
-
-In addition to the main indexes, a site configuration can define index subsets
-to be created by the Indexers. An index subset is is a filtered version of the
-index such that each subset contains only items that fit specific criteria. For
-example, it is common to create an index subset based on category, creating one
-JSON file for "category=Technology" and another for "category=Humor". Another
-common use is to create subsets by author. Index subsets are always based on
-some metadata field found in the archetype.
-
-Although the system does not (currently) place any constraints on the fields
-that can be used as the basis for an index subset, to achieve good performance a
-site owner should take care to create subsets only on metadata fields that have
-a constrained number of values. Creating subsets based on a "tags" field, for
-example, would likely create a huge number of files, which would be expensive
-and of limited utility. 
-
-Like the main indexes, index subsets are constrained to contain items of the
-same item class. Site owners may need to declare the same subset on multiple
-classes, for example if they want a per author file for Articles, Audio, Images,
-and Video.
-
-Index subsets take the place of the simplest and most common database queries
-that a dynamic CMS would make. In future versions we will add mechanisms for
-performing more complex query operations.
+Indexes are still being evolved. Current thinking is to use DynamoDB. Exact
+schema still to be defined.
 
 ## Example Workflows
 
