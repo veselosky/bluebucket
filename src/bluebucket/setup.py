@@ -57,6 +57,7 @@ setup(
     author_email=about['__author_email__'],
     url=about['__url__'],
     packages=['bluebucket'],
+    package_data={"bluebucket": ['*.json']},
     include_package_data=True,
     install_requires=requirements,
     license=about['__license__'],

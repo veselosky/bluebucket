@@ -201,3 +201,55 @@ s3eventsource = {
         }
     ]
 }
+
+
+contentful_publish_notification = {
+    "sys": {
+        "contentType": {
+            "sys": {
+                "linkType": "ContentType",
+                "type": "Link",
+                "id": "Article"
+            }
+        },
+        "space": {
+            "sys": {
+                "linkType": "Space",
+                "type": "Link",
+                "id": "58t119nd8cm5"
+            }
+        },
+        "updatedAt": "2016-05-30T15:25:00.345Z",
+        "type": "Entry",
+        "id": "46KZTV0904MkgYUYuIAUWg",
+        "createdAt": "2016-05-30T15:25:00.345Z",
+        "revision": 1
+    },
+    "fields": {
+        "category": {
+            "en-US": "contentful/testing"
+        },
+        "body": {
+            "en-US": "# Headline!\nThis is the body text of the article."
+        },
+        "description": {
+            "en-US": "Describing the heck out of this article because wow."
+        },
+        "title": {
+            "en-US": "Test Article"
+        },
+        "slug": {
+            "en-US": "test-article"
+        },
+        "thumbnail": {
+            "en-US": {
+                "sys": {
+                    "linkType": "Asset",
+                    "type": "Link",
+                    "id": "6bXPlsZvMWoe8m2w8AO6As"
+                }
+            }
+        }
+    }
+}
+
