@@ -1,5 +1,6 @@
 jinja2
 jinja2_s3loader
+jsonschema
 markdown
 python-dateutil
 pytz

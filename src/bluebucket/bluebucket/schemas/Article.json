@@ -1,0 +1,21 @@
+{ 
+    "$schema": "http://json-schema.org/schema#",
+    "definitions": {
+        "body": {"type": "string"},
+        "headline": {"type": "string"},
+        "Item-Page-Article": {
+            "type": "object",
+            "properties": {
+                "body": {"$ref": "#definitions/body"},
+                "headline": {"$ref": "#definitions/headline"}
+            }
+        }
+    },
+    "type": "object",
+    "required": ["Item", "Item-Page-Article"],
+    "properties": {
+        "Item": {"$ref": "Item.json#/definitions/Item" },
+        "Item-Page": {"$ref": "Page.json#/definitions/Item-Page" },
+        "Item-Page-Article": {"$ref": "#/definitions/Item-Page-Article"}
+    }
+}
