@@ -1,5 +1,25 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
+# vim: set fileencoding=utf-8 :
+#
+#   Copyright 2016 Vince Veselosky and contributors
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+#
+# BUG in setuptools:
+# in Python 2, setuptools hates unicode, requires bytestring args. ugh.
+# https://stackoverflow.com/questions/23174738/setup-py-packages-and-unicode-literals
+# https://bugs.python.org/issue13943
+from __future__ import absolute_import, print_function  # , unicode_literals
 
 try:
     from setuptools import setup
@@ -36,15 +56,11 @@ setup(
     author=about['__author__'],
     author_email=about['__author_email__'],
     url=about['__url__'],
-    packages=[
-        'bluebucket',
-    ],
-    package_dir={'bluebucket':
-                 'bluebucket'},
+    packages=['bluebucket'],
     include_package_data=True,
     install_requires=requirements,
     license=about['__license__'],
-    zip_safe=False,
+    zip_safe=True,
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
         'Intended Audience :: Developers',
@@ -52,8 +68,6 @@ setup(
         'Natural Language :: English',
         "Programming Language :: Python :: 2",
         'Programming Language :: Python :: 2.7',
-        'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.4',
     ],
     test_suite='tests',
     tests_require=test_requirements
