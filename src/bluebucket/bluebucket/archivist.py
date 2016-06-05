@@ -1,6 +1,6 @@
 # vim: set fileencoding=utf-8 :
 #
-#   Copyright 2015 Vince Veselosky and contributors
+#   Copyright 2016 Vince Veselosky and contributors
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ import boto3
 import json
 import posixpath as path
 import re
-from bluebucket.util import SmartJSONEncoder, gunzip, gzip
+from .util import SmartJSONEncoder, gunzip, gzip
 from pytz import timezone
 
 
