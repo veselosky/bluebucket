@@ -25,7 +25,8 @@ except ImportError:
 import json
 from pytz import timezone
 
-from bluebucket.archivist import S3archivist, S3resource, inflate_config
+from bluebucket.archivist import S3archivist, S3resource, S3event
+from bluebucket.archivist import inflate_config, parse_message
 from bluebucket.util import gzip
 import stubs
 import pytest
@@ -395,4 +396,33 @@ def test_timezone_from_obj():
     cfg = inflate_config(config)
 
     assert hasattr(cfg['timezone'], 'localize')
+
+
+###########################################################################
+# Test S3event
+###########################################################################
+
+# Given a valid event struct
+# When I construct S3event from it
+# Then the correct properties are set
+def test_s3event_construct():
+    event = stubs.generate_event()['Records'][0]
+    ev = S3event(event)
+
+    assert ev.bucket == event['s3']['bucket']['name']
+    assert ev.etag == event['s3']['object']['eTag']
+    assert ev.key == event['s3']['object']['key']
+    assert ev.name == event['eventName']
+    assert ev.region == event['awsRegion']
+    assert ev.sequencer == event['s3']['object']['sequencer']
+    assert ev.source == event['eventSource']
+    assert hasattr(ev.time, 'isoformat')
+
+
+def test_parse_message():
+    message = stubs.generate_event()
+    result = parse_message(message)
+
+    assert len(result) == 1
+    assert type(result[0]) == S3event
 

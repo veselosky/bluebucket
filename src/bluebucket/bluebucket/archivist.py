@@ -16,6 +16,7 @@
 #
 from __future__ import absolute_import, print_function, unicode_literals
 import boto3
+from dateutil.parser import parse as parse_date
 import json
 import re
 from .pathstrategy import DefaultPathStrategy
@@ -209,3 +210,33 @@ class S3archivist(object):
                 marker = listing['NextMarker']
             else:
                 incomplete = False
+
+
+#######################################################################
+# Events
+#######################################################################
+class S3event(object):
+    def __init__(self, event, **kwargs):
+        for key in kwargs:
+            setattr(self, key, kwargs[key])
+        self.bucket = event['s3']['bucket']['name']
+        self.etag = event['s3']['object']['eTag']
+        self.key = event['s3']['object']['key']
+        self.name = event['eventName']
+        self.region = event['awsRegion']
+        self.sequencer = event['s3']['object']['sequencer']
+        self.source = event['eventSource']
+        self.time = parse_date(event['eventTime'])
+
+
+def parse_message(message, **kwargs):
+    eventlist = message['Records']
+    events = []
+    for ev in eventlist:
+        if ev['eventSource'] == 'aws:s3':
+            # got an actual S3 event, direct
+            events.append(S3event(ev))
+        else:  # TODO support SNS messages
+            pass
+
+    return events
