@@ -17,8 +17,8 @@
 from __future__ import absolute_import, print_function, unicode_literals
 import boto3
 import json
-import posixpath as path
 import re
+from .pathstrategy import DefaultPathStrategy
 from .util import SmartJSONEncoder, gunzip, gzip
 from pytz import timezone
 
@@ -35,6 +35,7 @@ def inflate_config(config):
 class S3asset(object):
     def __init__(self, **kwargs):
         self.resourcetype = None
+        self.acl = None
         self.bucket = None
         self.content = None
         self.contenttype = None
@@ -97,6 +98,9 @@ class S3asset(object):
             s3obj['Body'] = gzip(self.content)
         else:
             s3obj['Body'] = self.content
+        if self.acl:
+            s3obj['ACL'] = self.acl
+
         return s3obj
 
     def is_compressible(self):
@@ -110,10 +114,11 @@ class S3archivist(object):
 
     def __init__(self, bucket, **kwargs):
         self.bucket = bucket
-        self.archetype_prefix = '/_A/'
-        self.index_prefix = '/_I/'
+        self.archetype_prefix = '_A/'
+        self.index_prefix = '_I/'
         self.s3 = None
         self.siteconfig = None
+        self.pathstrategy = DefaultPathStrategy()
         self._jinja = None  # See jinja property below
         for key in kwargs:
             if key == 'jinja':
@@ -163,15 +168,10 @@ class S3archivist(object):
         return self.s3.delete_object(Bucket=self.bucket, Key=filename)
 
     def new_asset(self, key, **kwargs):
-        if kwargs.get('resourcetype', None) == 'archetype':
-            if not key.startswith(self.archetype_prefix):
-                key = path.join(self.archetype_prefix, key)
-        elif kwargs.get('resourcetype', None) == 'index':
-            if not key.startswith(self.index_prefix):
-                key = path.join(self.index_prefix, key)
-
+        key = self.pathstrategy.path_for(key=key, **kwargs)
         return S3asset(bucket=self.bucket, key=key, **kwargs)
 
+    # FIXME Remove this method after json.py is updated to use path strategy
     def unprefix(self, key):
         "Remove the archetype or index prefix from a key."
         if key.startswith(self.archetype_prefix):

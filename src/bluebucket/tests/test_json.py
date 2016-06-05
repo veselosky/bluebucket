@@ -28,7 +28,7 @@ siteconfig = {
 archetype = {
     "title": "Page Title",
     "date": "2015-11-23",
-    "_content": "<p>test</p>",
+    "body": "<p>test</p>",
 }
 testbucket = 'test-bucket'
 

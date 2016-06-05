@@ -46,13 +46,11 @@ md = markdown.Markdown(extensions=extensions, lazy_ol=False,
                        output_format='html5')
 
 
-def on_save(archivist, asset):
-
-    html = md.convert(asset.text)
+def to_archetype(text, timezone=pytz.utc):
+    html = md.convert(text)
 
     metadata = md.Meta
     metadict = {}
-    timezone = archivist.siteconfig.get('timezone', pytz.utc)
     for key, value in metadata.items():
         if key in ['date', 'published', 'updated']:
             # because humans are sloppy, we parse and normalize date values
@@ -61,7 +59,14 @@ def on_save(archivist, asset):
             # reads everything as list, but most values should be scalar
             metadict[key] = value[0] if len(value) == 1 else value
 
-    metadict['_content'] = html
+    metadict['body'] = html
+    return metadict
+
+
+def on_save(archivist, asset):
+    timezone = archivist.siteconfig.get('timezone', pytz.utc)
+    metadict = to_archetype(asset.text, timezone)
+
     content = json.dumps(metadict, cls=SmartJSONEncoder, sort_keys=True)
     archetype = archivist.new_asset(key=change_ext(asset.key, '.json'),
                                     contenttype='application/json',

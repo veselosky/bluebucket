@@ -29,7 +29,7 @@ Date: 2015-11-03
 ¿Dónde esta el baño?
 """
 
-out = b'{"_content": "<p>\u00bfD\u00f3nde esta el ba\u00f1o?</p>", "date": "2015-11-03T00:00:00Z", "title": "Test Markdown Document"}'  # noqa
+out = b'{"body": "<p>\u00bfD\u00f3nde esta el ba\u00f1o?</p>", "date": "2015-11-03T00:00:00Z", "title": "Test Markdown Document"}'  # noqa
 
 
 # Given an asset representing a markdown file

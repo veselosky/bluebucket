@@ -54,6 +54,7 @@ def on_save(archivist, asset):
     context['_site'] = archivist.siteconfig
     template = get_template(archivist, context)
     content = template.render(context)
+    # FIXME Update this to use new path strategy
     key = archivist.unprefix(asset.key)
     monograph = archivist.new_asset(key=change_ext(key, '.html'),
                                     contenttype='text/html; charset=utf-8',
