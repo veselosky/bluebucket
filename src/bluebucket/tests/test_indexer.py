@@ -100,7 +100,8 @@ def test_on_save_with_non_archetype():
     arch.index_prefix = 'test'
     arch.siteconfig = {"site": asset_data}
     arch.all_archetypes.return_value = []
-    asset = arch.new_asset(key='test.key', data=asset_data, artifact='thing')
+    asset = arch.new_asset(key='test.key', data=asset_data,
+                           resourcetype='asset')
     indexer = Indexer(archivist=arch)
 
     indexer.on_save(asset)
@@ -110,9 +111,10 @@ def test_on_save_with_non_archetype():
 def test_on_delete():
     arch = S3archivist(testbucket, s3=mock.Mock(), siteconfig={})
     testkey = arch.archetype_prefix + 'test.key'
-    asset = arch.new_asset(key=testkey, data=asset_data, artifact='archetype')
+    asset = arch.new_asset(key=testkey, data=asset_data,
+                           resourcetype='archetype')
     asset2 = arch.new_asset(key='non-matching.key', data=asset_data,
-                            artifact='archetype')
+                            resourcetype='archetype')
     entries = []
     indexer = Indexer(archivist=arch)
     indexer.indexes[indexer.index_key] = {"entries": entries}

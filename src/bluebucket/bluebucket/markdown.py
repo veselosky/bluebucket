@@ -66,7 +66,7 @@ def on_save(archivist, asset):
     archetype = archivist.new_asset(key=change_ext(asset.key, '.json'),
                                     contenttype='application/json',
                                     content=content,
-                                    artifact='archetype')
+                                    resourcetype='archetype')
 
     return [archetype]
 

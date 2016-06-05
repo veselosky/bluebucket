@@ -1,6 +1,6 @@
 # vim: set fileencoding=utf-8 :
 #
-#   Copyright 2015 Vince Veselosky and contributors
+#   Copyright 2016 Vince Veselosky and contributors
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -129,14 +129,14 @@ def test_save_success():
     asset = arch.new_asset('filename.txt',
                            content='contents',
                            contenttype=contenttype,
-                           artifact='source'
+                           resourcetype='asset'
                            )
     arch.save(asset)
 
     arch.s3.put_object.assert_called_with(
         Key='filename.txt',
         Body=mock.ANY,
-        Metadata={"artifact": "source"},
+        Metadata={"resourcetype": "asset"},
         ContentType=contenttype,
         ContentEncoding='gzip',
         Bucket=testbucket,
@@ -152,7 +152,7 @@ def test_save_with_metadata():
     asset = arch.new_asset('filename.txt',
                            content='contents',
                            contenttype=contenttype,
-                           artifact='source',
+                           resourcetype='asset',
                            metadata=meta
                            )
     arch.save(asset)
@@ -160,7 +160,7 @@ def test_save_with_metadata():
     arch.s3.put_object.assert_called_with(
         Key='filename.txt',
         Body=mock.ANY,
-        Metadata={"stuff": "things", "artifact": "source"},
+        Metadata={"stuff": "things", "resourcetype": "asset"},
         ContentType=contenttype,
         ContentEncoding='gzip',
         Bucket=testbucket,
@@ -188,7 +188,7 @@ def test_save_no_contenttype():
     arch = S3archivist(testbucket, s3=mock.Mock(), siteconfig={})
     asset = arch.new_asset('filename.txt',
                            content='contents',
-                           artifact='source',
+                           resourcetype='asset',
                            )
     with pytest.raises(TypeError) as einfo:
         arch.save(asset)
@@ -202,7 +202,7 @@ def test_save_no_content():
     arch = S3archivist(testbucket, s3=mock.Mock(), siteconfig={})
     asset = arch.new_asset('filename.txt',
                            contenttype=contenttype,
-                           artifact='source',
+                           resourcetype='asset',
                            )
     with pytest.raises(TypeError) as einfo:
         arch.save(asset)
@@ -217,7 +217,7 @@ def test_save_no_filename():
     with pytest.raises(TypeError) as einfo:
         asset = arch.new_asset(content='contents',
                                contenttype=contenttype,
-                               artifact='source',
+                               resourcetype='asset',
                                )
         arch.save(asset)
     assert einfo
@@ -260,7 +260,7 @@ def test_s3object_to_asset_binary():
     assert bobj.contenttype == resp['ContentType']
     assert bobj.last_modified == resp['LastModified']
     assert bobj.metadata == resp['Metadata']
-    assert bobj.artifact == resp['Metadata']['artifact']
+    assert bobj.resourcetype == resp['Metadata']['resourcetype']
     assert bobj.content == stubs.binary_content
 
 

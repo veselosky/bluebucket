@@ -40,7 +40,7 @@ def s3get_response_text_utf8():
         u'ContentType': 'text/plain; charset=utf-8',
         u'ETag': '"ad668d6d0dd7cd4fadd7b3dcf92355aa"',
         u'LastModified': testable_datetime,
-        u'Metadata': {'artifact': 'asset'},
+        u'Metadata': {'resourcetype': 'asset'},
         'ResponseMetadata': {
             'HTTPStatusCode': 200,
             'HostId': 'P7ndnrWmNBDnBwwiwNGodgDxohWTQyM0gP7ikcuKQJ+ZAU4XMcVGXr=',
@@ -58,7 +58,7 @@ def s3get_response_json():
         u'ContentType': 'application/json',
         u'ETag': '"ad668d6d0dd7cd4fadd7b3dcf92355aa"',
         u'LastModified': testable_datetime,
-        u'Metadata': {'artifact': 'asset'},
+        u'Metadata': {'resourcetype': 'asset'},
         'ResponseMetadata': {
             'HTTPStatusCode': 200,
             'HostId': 'P7ndnrWmNBDnBwwiwNGodgDxohWTQyM0gP7ikcuKQJ+ZAU4XMcVGX9=',
@@ -76,7 +76,7 @@ def s3get_response_binary():
         u'ContentType': 'application/octet-stream',
         u'ETag': '"ad668d6d0dd7cd4fadd7b3dcf92355aa"',
         u'LastModified': testable_datetime,
-        u'Metadata': {'artifact': 'asset'},
+        u'Metadata': {'resourcetype': 'asset'},
         'ResponseMetadata': {
             'HTTPStatusCode': 200,
             'HostId': 'P7ndnrWmNBDnBwwiwNGodgDxohWTQyM0gP7ikcuKQJ+ZAU4XMcVGX9=',

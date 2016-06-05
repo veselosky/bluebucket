@@ -48,7 +48,7 @@ def get_template(archivist, context):
 
 
 def on_save(archivist, asset):
-    if not asset.artifact == 'archetype':
+    if not asset.resourcetype == 'archetype':
         return []
     context = asset.data
     context['_site'] = archivist.siteconfig
@@ -58,7 +58,7 @@ def on_save(archivist, asset):
     monograph = archivist.new_asset(key=change_ext(key, '.html'),
                                     contenttype='text/html; charset=utf-8',
                                     content=content,
-                                    artifact='monograph')
+                                    resourcetype='artifact')
     return [monograph]
 
 

@@ -1,6 +1,6 @@
 # vim: set fileencoding=utf-8 :
 #
-#   Copyright 2015 Vince Veselosky and contributors
+#   Copyright 2016 Vince Veselosky and contributors
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -38,7 +38,7 @@ out = b'{"_content": "<p>\u00bfD\u00f3nde esta el ba\u00f1o?</p>", "date": "2015
 # And the asset has a key ending in .json
 # And the asset has a contenttype of application/json
 # And the asset has correct json (with HTML content)
-# And the asset has artifact of "archetype"
+# And the asset has resourcetype of "archetype"
 def test_transform_on_save():
     archivist = S3archivist(testbucket,
                             s3=mock.Mock(),
@@ -55,7 +55,7 @@ def test_transform_on_save():
     print(out)
     assert archetype.content == out
     assert archetype.contenttype.startswith('application/json')
-    assert archetype.artifact == 'archetype'
+    assert archetype.resourcetype == 'archetype'
     assert archetype.key.endswith('index.json')
 
 

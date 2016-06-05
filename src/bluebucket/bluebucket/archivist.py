@@ -34,7 +34,7 @@ def inflate_config(config):
 
 class S3asset(object):
     def __init__(self, **kwargs):
-        self.artifact = None
+        self.resourcetype = None
         self.bucket = None
         self.content = None
         self.contenttype = None
@@ -57,7 +57,7 @@ class S3asset(object):
         # NOTE reflects compressed size if compressed
         b.content_length = obj['ContentLength']
         b.metadata = obj['Metadata']
-        b.artifact = obj['Metadata']['artifact']
+        b.resourcetype = obj['Metadata']['resourcetype']
         if 'ContentEncoding' in obj and obj['ContentEncoding'] == 'gzip':
             b.contentencoding = obj['ContentEncoding']
             b.content = gunzip(obj['Body'].read())
@@ -151,7 +151,7 @@ class S3archivist(object):
         if asset.content is None:
             raise TypeError("""To save an empty asset, set content to an empty
                             bytestring""")
-        asset.metadata['artifact'] = asset.artifact
+        asset.metadata['resourcetype'] = asset.resourcetype
         s3obj = asset.as_s3object(self.bucket)
         return self.s3.put_object(**s3obj)
 
@@ -163,10 +163,10 @@ class S3archivist(object):
         return self.s3.delete_object(Bucket=self.bucket, Key=filename)
 
     def new_asset(self, key, **kwargs):
-        if kwargs.get('artifact', None) == 'archetype':
+        if kwargs.get('resourcetype', None) == 'archetype':
             if not key.startswith(self.archetype_prefix):
                 key = path.join(self.archetype_prefix, key)
-        elif kwargs.get('artifact', None) == 'index':
+        elif kwargs.get('resourcetype', None) == 'index':
             if not key.startswith(self.index_prefix):
                 key = path.join(self.index_prefix, key)
 

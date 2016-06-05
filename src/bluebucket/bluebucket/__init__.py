@@ -1,6 +1,6 @@
 # vim: set fileencoding=utf-8 :
 #
-#   Copyright 2015 Vince Veselosky and contributors
+#   Copyright 2016 Vince Veselosky and contributors
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -18,15 +18,13 @@
 This bluebucket module is a library of functions and classes factored out from
 the Blue Bucket Project Lambda function handlers.
 
-For fields expecting an artifact, valid artifact values are:
-    [None, 'anthology', 'archetype', 'asset', 'monograph', 'source']
+For fields expecting a resourcetype, valid resourcetype values are:
+    [None, 'archetype', 'artifact', 'asset']
 
 """
 from __future__ import absolute_import, print_function, unicode_literals
-import pytz
 import logging
 import posixpath as path
-from pytz import timezone
 
 from .__about__ import *  # noqa
 from .archivist import S3archivist
