@@ -56,13 +56,13 @@ def on_save(archivist, asset):
     content = template.render(context)
     # FIXME Update this to use new path strategy
     key = archivist.unprefix(asset.key)
-    monograph = archivist.new_asset(key=change_ext(key, '.html'),
-                                    contenttype='text/html; charset=utf-8',
-                                    content=content,
-                                    resourcetype='artifact')
+    monograph = archivist.new_resource(key=change_ext(key, '.html'),
+                                       contenttype='text/html; charset=utf-8',
+                                       content=content,
+                                       resourcetype='artifact')
     return [monograph]
 
 
 def on_delete(archivist, key):
-    return [archivist.new_asset(key=change_ext(key, '.html'), deleted=True)]
+    return [archivist.new_resource(key=change_ext(key, '.html'), deleted=True)]
 

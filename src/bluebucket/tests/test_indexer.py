@@ -45,7 +45,7 @@ asset_data = {
 # Then a dictionary with values from the asset is returned
 def test_record_from_asset():
     arch = S3archivist(testbucket, s3=mock.Mock(), siteconfig={})
-    asset = arch.new_asset(key='test.key', data=asset_data)
+    asset = arch.new_resource(key='test.key', data=asset_data)
     indexer = Indexer(archivist=arch)
     ix = indexer.record_for_asset(asset)
     assert ix['title'] == asset_data['title']
@@ -75,7 +75,7 @@ def test_add_to_index():
     indexer = Indexer(archivist=arch)
     entries = []
     indexer.indexes[indexer.index_key] = {"entries": entries}
-    asset = arch.new_asset(key='test.key', data=asset_data)
+    asset = arch.new_resource(key='test.key', data=asset_data)
 
     indexer.add_to_index(indexer.index_key, asset)
 
@@ -100,8 +100,8 @@ def test_on_save_with_non_archetype():
     arch.index_prefix = 'test'
     arch.siteconfig = {"site": asset_data}
     arch.all_archetypes.return_value = []
-    asset = arch.new_asset(key='test.key', data=asset_data,
-                           resourcetype='asset')
+    asset = arch.new_resource(key='test.key', data=asset_data,
+                              resourcetype='asset')
     indexer = Indexer(archivist=arch)
 
     indexer.on_save(asset)
@@ -111,10 +111,10 @@ def test_on_save_with_non_archetype():
 def test_on_delete():
     arch = S3archivist(testbucket, s3=mock.Mock(), siteconfig={})
     testkey = arch.archetype_prefix + 'test.key'
-    asset = arch.new_asset(key=testkey, data=asset_data,
-                           resourcetype='archetype')
-    asset2 = arch.new_asset(key='non-matching.key', data=asset_data,
-                            resourcetype='archetype')
+    asset = arch.new_resource(key=testkey, data=asset_data,
+                              resourcetype='archetype')
+    asset2 = arch.new_resource(key='non-matching.key', data=asset_data,
+                               resourcetype='archetype')
     entries = []
     indexer = Indexer(archivist=arch)
     indexer.indexes[indexer.index_key] = {"entries": entries}

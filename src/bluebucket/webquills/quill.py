@@ -62,7 +62,7 @@ def publish(archivist, text):
         'acl': 'public-read',
     }
     key = archivist.pathstrategy.path_for(**dict(assetmeta, **contentmeta))
-    asset = archivist.new_asset(
+    asset = archivist.new_resource(
         key=key,
         text=text,
         **assetmeta
@@ -102,7 +102,7 @@ def main():
 # Determine bucket key for file:
 #   Extract metadata
 #   Call archivist.make_path("source", meta) to determine bucket key.
-# archivist.new_asset(markdown_source)
+# archivist.new_resource(markdown_source)
 # SAVE (PUT) the asset
 # TODO (After preview is implemented) Check for and delete any preview
 

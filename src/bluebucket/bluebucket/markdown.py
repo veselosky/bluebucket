@@ -68,15 +68,18 @@ def on_save(archivist, asset):
     metadict = to_archetype(asset.text, timezone)
 
     content = json.dumps(metadict, cls=SmartJSONEncoder, sort_keys=True)
-    archetype = archivist.new_asset(key=change_ext(asset.key, '.json'),
-                                    contenttype='application/json',
-                                    content=content,
-                                    resourcetype='archetype')
+    archetype = archivist.new_resource(key=change_ext(asset.key, '.json'),
+                                       contenttype='application/json',
+                                       content=content,
+                                       resourcetype='archetype')
 
     return [archetype]
 
 
 def on_delete(archivist, key):
-    arch = archivist.new_asset(key=change_ext(key, '.json'), deleted=True)
+    arch = archivist.new_resource(key=change_ext(key, '.json'), deleted=True)
     return [arch]
 
+# def handle_message(message, context):
+    # for event in S3events(message, "ObjectCreated"):
+        # resources.append(do_as_you_are_told(event))

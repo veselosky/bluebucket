@@ -43,9 +43,9 @@ def test_transform_on_save():
     archivist = S3archivist(testbucket,
                             s3=mock.Mock(),
                             siteconfig={'timezone': pytz.utc})
-    asset = archivist.new_asset(key='index.md',
-                                contenttype='text/markdown',
-                                content=doc.encode('utf-8'))
+    asset = archivist.new_resource(key='index.md',
+                                   contenttype='text/markdown',
+                                   content=doc.encode('utf-8'))
     rval = mark.on_save(archivist, asset)
 
     assert len(rval) == 1

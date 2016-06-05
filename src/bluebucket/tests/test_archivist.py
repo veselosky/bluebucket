@@ -25,7 +25,7 @@ except ImportError:
 import json
 from pytz import timezone
 
-from bluebucket.archivist import S3archivist, S3asset, inflate_config
+from bluebucket.archivist import S3archivist, S3resource, inflate_config
 from bluebucket.util import gzip
 import stubs
 import pytest
@@ -39,24 +39,24 @@ testbucket = 'test-bucket'
 ###########################################################################
 
 # Given an archivist
-# When I call archivist.new_asset(key)
+# When I call archivist.new_resource(key)
 # A new asset is returned
 # and the asset's bucket attribute has the same value as the archivist's
 # and the asset's key attribute is set with the argument
-def test_new_asset_with_key():
+def test_new_resource_with_key():
     arch = S3archivist(testbucket, s3=mock.Mock(), siteconfig={})
-    asset = arch.new_asset('test.key')
+    asset = arch.new_resource('test.key')
     assert asset.bucket == testbucket
     assert asset.key == 'test.key'
 
 
 # Given an archivist
-# When I call archivist.new_asset(key, **kwargs)
+# When I call archivist.new_resource(key, **kwargs)
 # A new asset is returned
 # and the asset's attributes have been set by the kwargs
-def test_new_asset_with_kwargs():
+def test_new_resource_with_kwargs():
     arch = S3archivist(testbucket, s3=mock.Mock(), siteconfig={})
-    asset = arch.new_asset('test.key', deleted=True)
+    asset = arch.new_resource('test.key', deleted=True)
     assert asset.deleted is True
 
 
@@ -126,11 +126,11 @@ def test_delete_no_filename():
 # Then archivist calls s3.put_object with correct params
 def test_save_success():
     arch = S3archivist(testbucket, s3=mock.Mock(), siteconfig={})
-    asset = arch.new_asset('filename.txt',
-                           content='contents',
-                           contenttype=contenttype,
-                           resourcetype='asset'
-                           )
+    asset = arch.new_resource('filename.txt',
+                              content='contents',
+                              contenttype=contenttype,
+                              resourcetype='asset'
+                              )
     arch.save(asset)
 
     arch.s3.put_object.assert_called_with(
@@ -149,12 +149,12 @@ def test_save_success():
 def test_save_with_metadata():
     arch = S3archivist(testbucket, s3=mock.Mock(), siteconfig={})
     meta = {"stuff": "things"}
-    asset = arch.new_asset('filename.txt',
-                           content='contents',
-                           contenttype=contenttype,
-                           resourcetype='asset',
-                           metadata=meta
-                           )
+    asset = arch.new_resource('filename.txt',
+                              content='contents',
+                              contenttype=contenttype,
+                              resourcetype='asset',
+                              metadata=meta
+                              )
     arch.save(asset)
 
     arch.s3.put_object.assert_called_with(
@@ -172,7 +172,7 @@ def test_save_with_metadata():
 # Then archivist calls s3.delete_object with correct params
 def test_save_deleted():
     arch = S3archivist(testbucket, s3=mock.Mock(), siteconfig={})
-    asset = arch.new_asset('filename.txt', deleted=True)
+    asset = arch.new_resource('filename.txt', deleted=True)
     arch.save(asset)
 
     arch.s3.delete_object.assert_called_with(
@@ -186,10 +186,10 @@ def test_save_deleted():
 # Then archivist raises TypeError
 def test_save_no_contenttype():
     arch = S3archivist(testbucket, s3=mock.Mock(), siteconfig={})
-    asset = arch.new_asset('filename.txt',
-                           content='contents',
-                           resourcetype='asset',
-                           )
+    asset = arch.new_resource('filename.txt',
+                              content='contents',
+                              resourcetype='asset',
+                              )
     with pytest.raises(TypeError) as einfo:
         arch.save(asset)
     assert 'contenttype' in str(einfo.value)
@@ -200,10 +200,10 @@ def test_save_no_contenttype():
 # Then archivist raises TypeError
 def test_save_no_content():
     arch = S3archivist(testbucket, s3=mock.Mock(), siteconfig={})
-    asset = arch.new_asset('filename.txt',
-                           contenttype=contenttype,
-                           resourcetype='asset',
-                           )
+    asset = arch.new_resource('filename.txt',
+                              contenttype=contenttype,
+                              resourcetype='asset',
+                              )
     with pytest.raises(TypeError) as einfo:
         arch.save(asset)
     assert 'content' in str(einfo.value)
@@ -215,10 +215,10 @@ def test_save_no_content():
 def test_save_no_filename():
     arch = S3archivist(testbucket, s3=mock.Mock(), siteconfig={})
     with pytest.raises(TypeError) as einfo:
-        asset = arch.new_asset(content='contents',
-                               contenttype=contenttype,
-                               resourcetype='asset',
-                               )
+        asset = arch.new_resource(content='contents',
+                                  contenttype=contenttype,
+                                  resourcetype='asset',
+                                  )
         arch.save(asset)
     assert einfo
 
@@ -255,7 +255,7 @@ def test_all_archetypes():
 
 def test_s3object_to_asset_binary():
     resp = stubs.s3get_response_binary()
-    bobj = S3asset.from_s3object(resp)
+    bobj = S3resource.from_s3object(resp)
     assert bobj.content_length == resp['ContentLength']
     assert bobj.contenttype == resp['ContentType']
     assert bobj.last_modified == resp['LastModified']
@@ -265,14 +265,14 @@ def test_s3object_to_asset_binary():
 
 
 def test_s3object_to_asset_binary_has_no_text():
-    bobj = S3asset.from_s3object(stubs.s3get_response_binary())
+    bobj = S3resource.from_s3object(stubs.s3get_response_binary())
     assert bobj.content == stubs.binary_content
     with pytest.raises(ValueError):
         assert bobj.text == stubs.binary_content
 
 
 def test_s3object_to_asset_binary_has_no_json():
-    bobj = S3asset.from_s3object(stubs.s3get_response_binary())
+    bobj = S3resource.from_s3object(stubs.s3get_response_binary())
     assert bobj.content == stubs.binary_content
     with pytest.raises(ValueError):
         assert bobj.data == stubs.binary_content
@@ -281,7 +281,7 @@ def test_s3object_to_asset_binary_has_no_json():
 # If the content type matches text/*, the text property will contain the decoded
 # unicode text. The content property still contains raw bytes.
 def test_s3object_to_asset_text():
-    bobj = S3asset.from_s3object(stubs.s3get_response_text_utf8())
+    bobj = S3resource.from_s3object(stubs.s3get_response_text_utf8())
     assert bobj.content == stubs.text_content.encode('utf-8')
     assert bobj.text == stubs.text_content
 
@@ -289,30 +289,30 @@ def test_s3object_to_asset_text():
 # If the content type is application/json, the data property should contain the
 # parsed data structure.
 def test_s3object_to_asset_json():
-    bobj = S3asset.from_s3object(stubs.s3get_response_json())
+    bobj = S3resource.from_s3object(stubs.s3get_response_json())
     assert bobj.content == stubs.json_content
     assert bobj.data == json.loads(stubs.json_content)
 
 
 def test_asset_text_mutator():
     arch = S3archivist(testbucket, s3=mock.Mock(), siteconfig={})
-    asset = arch.new_asset(key='testkey', text='¿Dónde esta el baño?',
-                           contenttype='text/plain')
+    asset = arch.new_resource(key='testkey', text='¿Dónde esta el baño?',
+                              contenttype='text/plain')
     assert type(asset.content) == bytes
     assert asset.text == '¿Dónde esta el baño?'
 
 
 def test_asset_data_mutator():
     arch = S3archivist(testbucket, s3=mock.Mock(), siteconfig={})
-    asset = arch.new_asset(key='testkey', data={"this": "that"},
-                           contenttype='application/json')
+    asset = arch.new_resource(key='testkey', data={"this": "that"},
+                              contenttype='application/json')
     assert asset.content == '{"this": "that"}'
     assert asset.data == {"this": "that"}
 
 
 def test_text_asset_compresses():
-    asset = S3asset(bucket=testbucket, text='¿Dónde esta el baño?',
-                    contenttype='text/plain; charset=utf-8')
+    asset = S3resource(bucket=testbucket, text='¿Dónde esta el baño?',
+                       contenttype='text/plain; charset=utf-8')
     result = asset.as_s3object()
     assert result['Body'] == gzip('¿Dónde esta el baño?'.encode('utf-8'))
     assert result['ContentEncoding'] == 'gzip'
@@ -320,33 +320,33 @@ def test_text_asset_compresses():
 
 def test_json_asset_compresses():
     data = json.dumps({"a": '¿Dónde esta el baño?'})
-    asset = S3asset(bucket=testbucket, content=data,
-                    contenttype='application/json')
+    asset = S3resource(bucket=testbucket, content=data,
+                       contenttype='application/json')
     result = asset.as_s3object()
     assert result['Body'] == gzip(data)
     assert result['ContentEncoding'] == 'gzip'
 
 
 def test_rss_compresses():
-    asset = S3asset(bucket=testbucket, text='¿Dónde esta el baño?',
-                    contenttype='application/rss+xml')
+    asset = S3resource(bucket=testbucket, text='¿Dónde esta el baño?',
+                       contenttype='application/rss+xml')
     result = asset.as_s3object()
     assert result['Body'] == gzip('¿Dónde esta el baño?'.encode('utf-8'))
     assert result['ContentEncoding'] == 'gzip'
 
 
 def test_uncompressable_contenttype():
-    asset = S3asset(bucket=testbucket, text='¿Dónde esta el baño?',
-                    contenttype='application/octet-stream')
+    asset = S3resource(bucket=testbucket, text='¿Dónde esta el baño?',
+                       contenttype='application/octet-stream')
     result = asset.as_s3object()
     assert result['Body'] == '¿Dónde esta el baño?'.encode('utf-8')
     assert 'ContentEncoding' not in result
 
 
 def test_compression_disabled():
-    asset = S3asset(bucket=testbucket, text='¿Dónde esta el baño?',
-                    contenttype='text/plain; charset=utf-8',
-                    use_compression=False)
+    asset = S3resource(bucket=testbucket, text='¿Dónde esta el baño?',
+                       contenttype='text/plain; charset=utf-8',
+                       use_compression=False)
     result = asset.as_s3object()
     assert result['Body'] == '¿Dónde esta el baño?'.encode('utf-8')
     assert 'ContentEncoding' not in result

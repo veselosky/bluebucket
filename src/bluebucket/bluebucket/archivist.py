@@ -32,7 +32,7 @@ def inflate_config(config):
     return config
 
 
-class S3asset(object):
+class S3resource(object):
     def __init__(self, **kwargs):
         self.resourcetype = None
         self.acl = None
@@ -135,41 +135,41 @@ class S3archivist(object):
             self.siteconfig = inflate_config(self.get('bluebucket.json').data)
 
     def get(self, filename):
-        return S3asset.from_s3object(self.s3.get_object(Bucket=self.bucket,
-                                                        Key=filename))
+        return S3resource.from_s3object(self.s3.get_object(Bucket=self.bucket,
+                                                           Key=filename))
 
-    def save(self, asset):
-        # To be saved an asset must have: key, contenttype, content
+    def save(self, resource):
+        # To be saved a resource must have: key, contenttype, content
         # Strictly speaking, content is not required, but creating an empty
         # object should be explicit, so must pass empty string.
-        if asset.key is None:
-            raise TypeError("Cannot save asset without key")
+        if resource.key is None:
+            raise TypeError("Cannot save resource without key")
 
-        if asset.deleted:
+        if resource.deleted:
             return self.s3.delete_object(
-                Bucket=self.bucket,  # NOTE archivist's bucket, NOT asset's!
-                Key=asset.key,
+                Bucket=self.bucket,  # NOTE archivist's bucket, NOT resource's!
+                Key=resource.key,
             )
 
-        if asset.contenttype is None:
-            raise TypeError("Cannot save asset without contenttype")
-        if asset.content is None:
-            raise TypeError("""To save an empty asset, set content to an empty
+        if resource.contenttype is None:
+            raise TypeError("Cannot save resource without contenttype")
+        if resource.content is None:
+            raise TypeError("""To save an empty resource, set content to an empty
                             bytestring""")
-        asset.metadata['resourcetype'] = asset.resourcetype
-        s3obj = asset.as_s3object(self.bucket)
+        resource.metadata['resourcetype'] = resource.resourcetype
+        s3obj = resource.as_s3object(self.bucket)
         return self.s3.put_object(**s3obj)
 
-    def persist(self, assetlist):
-        for asset in assetlist:
-            self.save(asset)
+    def persist(self, resourcelist):
+        for resource in resourcelist:
+            self.save(resource)
 
     def delete(self, filename):
         return self.s3.delete_object(Bucket=self.bucket, Key=filename)
 
-    def new_asset(self, key, **kwargs):
+    def new_resource(self, key, **kwargs):
         key = self.pathstrategy.path_for(key=key, **kwargs)
-        return S3asset(bucket=self.bucket, key=key, **kwargs)
+        return S3resource(bucket=self.bucket, key=key, **kwargs)
 
     # FIXME Remove this method after json.py is updated to use path strategy
     def unprefix(self, key):
@@ -191,7 +191,7 @@ class S3archivist(object):
         return self._jinja
 
     def all_archetypes(self):
-        "A generator function that will yield every archetype asset."
+        "A generator function that will yield every archetype resource."
         # S3 will return up to 1000 items in a list_objects call. If there are
         # more, IsTruncated will be True and NextMarker is the offset to use to
         # get the next 1000.
@@ -203,8 +203,8 @@ class S3archivist(object):
                 args['Marker'] = marker
             listing = self.s3.list_objects(**args)
             for item in listing['Contents']:
-                asset = self.get(item['Key'])
-                yield asset
+                resource = self.get(item['Key'])
+                yield resource
             if listing['IsTruncated']:
                 marker = listing['NextMarker']
             else:
