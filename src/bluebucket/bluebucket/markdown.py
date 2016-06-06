@@ -26,12 +26,13 @@ Of special note:
 from __future__ import absolute_import, print_function
 
 import json
-from bluebucket.util import SmartJSONEncoder, change_ext
 from dateutil.parser import parse as parse_date
 import markdown
 from markdown.extensions.toc import TocExtension
 import pytz
 
+from .util import SmartJSONEncoder
+from .archivist import parse_aws_event, S3archivist
 
 extensions = [
     'markdown.extensions.extra',
@@ -47,6 +48,7 @@ md = markdown.Markdown(extensions=extensions, lazy_ol=False,
 
 
 def to_archetype(text, timezone=pytz.utc):
+    "Given text in markdown format, returns a dict of metadata and body text."
     html = md.convert(text)
 
     metadata = md.Meta
@@ -63,23 +65,24 @@ def to_archetype(text, timezone=pytz.utc):
     return metadict
 
 
-def on_save(archivist, asset):
+def on_save(archivist, resource):
     timezone = archivist.siteconfig.get('timezone', pytz.utc)
-    metadict = to_archetype(asset.text, timezone)
-
+    metadict = to_archetype(resource.text, timezone)
+    key = archivist.pathstrategy.path_for(resourcetype='archetype', **metadict)
     content = json.dumps(metadict, cls=SmartJSONEncoder, sort_keys=True)
-    archetype = archivist.new_resource(key=change_ext(asset.key, '.json'),
-                                       contenttype='application/json',
+    archetype = archivist.new_resource(key=key,
                                        content=content,
+                                       contenttype='application/json',
                                        resourcetype='archetype')
-
+    archivist.save(archetype)
     return [archetype]
 
 
-def on_delete(archivist, key):
-    arch = archivist.new_resource(key=change_ext(key, '.json'), deleted=True)
-    return [arch]
+def handle_message(message, context):
+    events = parse_aws_event(message)
+    for event in events:
+        if event.is_save_event:
+            archivist = S3archivist(event.bucket)
+            resource = archivist.get(event.key)
+            on_save(archivist, resource)
 
-# def handle_message(message, context):
-    # for event in S3events(message, "ObjectCreated"):
-        # resources.append(do_as_you_are_told(event))

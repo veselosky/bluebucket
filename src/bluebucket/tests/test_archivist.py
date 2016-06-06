@@ -26,7 +26,7 @@ import json
 from pytz import timezone
 
 from bluebucket.archivist import S3archivist, S3resource, S3event
-from bluebucket.archivist import inflate_config, parse_message
+from bluebucket.archivist import inflate_config, parse_aws_event
 from bluebucket.util import gzip
 import stubs
 import pytest
@@ -419,9 +419,9 @@ def test_s3event_construct():
     assert hasattr(ev.time, 'isoformat')
 
 
-def test_parse_message():
+def test_parse_aws_event():
     message = stubs.generate_event()
-    result = parse_message(message)
+    result = parse_aws_event(message)
 
     assert len(result) == 1
     assert type(result[0]) == S3event

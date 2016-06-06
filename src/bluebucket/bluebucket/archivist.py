@@ -33,6 +33,9 @@ def inflate_config(config):
     return config
 
 
+#######################################################################
+# Model a stored S3 object
+#######################################################################
 class S3resource(object):
     def __init__(self, **kwargs):
         self.resourcetype = None
@@ -109,6 +112,9 @@ class S3resource(object):
         return self.use_compression and re.match(yes, self.contenttype)
 
 
+#######################################################################
+# Archive Manager
+#######################################################################
 # Note that for testing purposes, you can pass both the s3 object and the jinja
 # object to the constructor.
 class S3archivist(object):
@@ -169,7 +175,6 @@ class S3archivist(object):
         return self.s3.delete_object(Bucket=self.bucket, Key=filename)
 
     def new_resource(self, key, **kwargs):
-        key = self.pathstrategy.path_for(key=key, **kwargs)
         return S3resource(bucket=self.bucket, key=key, **kwargs)
 
     # FIXME Remove this method after json.py is updated to use path strategy
@@ -213,7 +218,7 @@ class S3archivist(object):
 
 
 #######################################################################
-# Events
+# S3 Events
 #######################################################################
 class S3event(object):
     def __init__(self, event, **kwargs):
@@ -228,15 +233,18 @@ class S3event(object):
         self.source = event['eventSource']
         self.time = parse_date(event['eventTime'])
 
+    @property
+    def is_save_event(self):
+        return 'ObjectCreated' in self.name
 
-def parse_message(message, **kwargs):
+
+# TODO support SNS messages
+def parse_aws_event(message, **kwargs):
     eventlist = message['Records']
     events = []
     for ev in eventlist:
         if ev['eventSource'] == 'aws:s3':
             # got an actual S3 event, direct
             events.append(S3event(ev))
-        else:  # TODO support SNS messages
-            pass
 
     return events

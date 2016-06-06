@@ -34,6 +34,8 @@ class DefaultPathStrategy(object):
         resourcetype = meta.get('resourcetype', 'asset')
 
         if resourcetype == 'asset':
+            # Assets can live anywhere outside the archetypes dir, but Source
+            # assets are special and live inside the archetypes dir.
             key = meta.get('key')
             if key is not None:
                 if key.startswith(self.source_prefix):
@@ -46,10 +48,12 @@ class DefaultPathStrategy(object):
                 return folder + guid + '.md'
 
         elif resourcetype == 'archetype':
-            key = meta['key']
-            if not key.startswith(self.archetype_prefix):
-                key = path.join(self.archetype_prefix, key)
-            return key
+            # Archetypes do not allow any freedom in naming, they are always
+            # itemtype and guid
+            guid = meta['guid']  # required in this case
+            itemtype = meta['itemtype']
+            # TODO validate the format of the itemtype string
+            return path.join(self.source_prefix, itemtype, guid + '.json')
 
         elif resourcetype == 'artifact':
             key = meta['key']

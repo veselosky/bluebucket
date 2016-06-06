@@ -24,12 +24,14 @@ import bluebucket.markdown as mark
 testbucket = 'bluebucket.mindvessel.net'
 
 doc = """Title: Test Markdown Document
-Date: 2015-11-03
+Published: 2015-11-03
+Guid: f57beeec-9958-45bb-911e-df5a95064523
+Itemtype: Item/Page/Article
 
 ¿Dónde esta el baño?
 """
 
-out = b'{"body": "<p>\u00bfD\u00f3nde esta el ba\u00f1o?</p>", "date": "2015-11-03T00:00:00Z", "title": "Test Markdown Document"}'  # noqa
+out = b'{"body": "<p>\u00bfD\u00f3nde esta el ba\u00f1o?</p>", "guid": "f57beeec-9958-45bb-911e-df5a95064523", "itemtype": "Item/Page/Article", "published": "2015-11-03T00:00:00Z", "title": "Test Markdown Document"}'  # noqa
 
 
 # Given an asset representing a markdown file
@@ -56,22 +58,5 @@ def test_transform_on_save():
     assert archetype.content == out
     assert archetype.contenttype.startswith('application/json')
     assert archetype.resourcetype == 'archetype'
-    assert archetype.key.endswith('index.json')
-
-
-# Given a key representing a markdown file
-# When on_delete(key) is called
-# Then on_delete returns a list of one asset
-# And the asset has deleted flag set
-# And the asset has a key ending in .json
-def test_on_delete():
-    archivist = S3archivist(testbucket,
-                            s3=mock.Mock(),
-                            siteconfig={'timezone': pytz.utc})
-    rval = mark.on_delete(archivist, 'index.markdown')
-
-    assert len(rval) == 1
-    archetype = rval[0]
-    assert archetype.key == 'index.json'
-    assert archetype.deleted
+    assert archetype.key.endswith('.json')
 

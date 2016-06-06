@@ -29,6 +29,7 @@ archetype = {
     "title": "Page Title",
     "date": "2015-11-23",
     "body": "<p>test</p>",
+    "guid": "f57beeec-9958-45bb-911e-df5a95064523",
 }
 testbucket = 'test-bucket'
 
