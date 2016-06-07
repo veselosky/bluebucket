@@ -58,6 +58,7 @@ dist/bluebucket-lambda.zip:
 	rm -rf build/lambda/boto3 build/lambda/botocore
 	# shaves ~1MB, but how much time cost to recompile?
 	find ./build/lambda -name '*.pyc' -exec rm -f {} +
+	find . -name '__pycache__' -exec rm -fr {} +
 	cd build/lambda/ && zip -r ../../dist/bluebucket-lambda.zip *
 
 lambda: dist/bluebucket-lambda.zip
