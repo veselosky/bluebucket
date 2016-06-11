@@ -6,4 +6,3 @@ markdown
 python-dateutil
 python-slugify
 pytz
-pyyaml
