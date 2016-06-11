@@ -24,7 +24,8 @@ clean-build:
 	rm -fr build/
 	rm -fr dist/
 	rm -fr .eggs/
-	find . -name '*.egg-info' -exec rm -fr {} +
+	# If this is here you have to setup.py develop after every clean! :(
+	#find . -name '*.egg-info' -exec rm -fr {} +
 	find . -name '*.egg' -exec rm -f {} +
 
 clean-pyc:
@@ -55,7 +56,9 @@ dist/bluebucket-lambda.zip:
 	pip install -t build/lambda/ .
 	rm -rf build/lambda/*.dist-info build/lambda/*.egg-info
 	# boto3 is provided by Lambda, so do not package it or its deps
-	rm -rf build/lambda/boto3 build/lambda/botocore
+	rm -rf build/lambda/boto3 build/lambda/botocore build/lambda/concurrent build/lambda/jmespath build/lambda/docutils
+	# Do not need the CLI
+	rm -r build/lambda/webquills build/lambda/docopt.py
 	# shaves ~1MB, but how much time cost to recompile?
 	find ./build/lambda -name '*.pyc' -exec rm -f {} +
 	find . -name '__pycache__' -exec rm -fr {} +
@@ -64,10 +67,5 @@ dist/bluebucket-lambda.zip:
 lambda: dist/bluebucket-lambda.zip
 
 deploy: lambda
-	aws lambda update-function-code --function-name jsonarchetype \
-        --zip-file fileb://dist/bluebucket-lambda.zip --publish
-	aws lambda update-function-code --function-name markdownsource \
-        --zip-file fileb://dist/bluebucket-lambda.zip --publish
-	aws lambda update-function-code --function-name yamlsource \
-        --zip-file fileb://dist/bluebucket-lambda.zip --publish
+	aws s3 cp dist/bluebucket-lambda.zip s3://dist.webquills.net/alpha/bluebucket-lambda.zip --acl public-read
 
