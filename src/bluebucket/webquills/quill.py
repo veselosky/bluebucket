@@ -21,6 +21,7 @@ Usage:
     quill [options] new ITEMTYPE [TITLE]
     quill [options] publish ITEMFILE
     quill [options] aws-install
+    quill [options] init-bucket [options]
 
 Options:
     -b BUCKET, --bucket BUCKET  The S3 bucket to use.
@@ -97,217 +98,90 @@ def publish(archivist, text):
 # quill aws-install
 # Install the required roles, SNS Topics, and Lambda functions for basic
 # publishing functionality.
-AssumeRolePolicyDoc = {
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Principal": {
-                "Service": "lambda.amazonaws.com"
-            },
-            "Action": "sts:AssumeRole"
-        }
-    ]
-}
-#: The WebquillsScribePolicyDoc describes all the permissions granted to Scribe
-#: Lambda functions. It is assigned to the webquills-scribe role.
-WebquillsScribePolicyDoc = {
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Action": [
-                "logs:CreateLogGroup",
-                "logs:CreateLogStream",
-                "logs:PutLogEvents"
-            ],
-            "Effect": "Allow",
-            "Resource": "arn:aws:logs:*:*:*"
-        },
-        {
-            "Effect": "Allow",
-            "Action": ["sns:Publish", "sns:Receive", "sns:Subscribe"],
-            "Resource": "arn:aws:sns:*:*:webquills-*"
-        }
-    ]
-}
-Topics = [
-    "webquills-on-save-source-text-markdown",
-    "webquills-on-remove-source-text-markdown",
-    "webquills-on-save-item-page-article",
-    "webquills-on-remove-item-page-article",
-    "webquills-on-save-artifact",
-    "webquills-on-remove-artifact"
-]
-
-
 def aws_update(region, account):
     "Install or update core functions and SNS Topics for WebQuills"
-    # ensure we have our Lambda execution role
-    # Save the role ARN for later, we will need it when creating Lambda
-    # functions
-    iam = boto3.client("iam", region_name=region)
-    resp = iam.list_roles(PathPrefix='/webquills/')
-    if len(resp['Roles']) < 1:
-        print("Creating role for webquills-scribe")
-        resp = iam.create_role(
-            Path='/webquills/',
-            RoleName='webquills-scribe',
-            AssumeRolePolicyDocument=json.dumps(AssumeRolePolicyDoc)
-        )
-        scribe_role = resp['Role']['Arn']
-    else:
-        for role in resp['Roles']:
-            print('Found role %s' % role['RoleName'])
-            if role['RoleName'] == 'webquills-scribe':
-                scribe_role = role['Arn']
+    print("Switched to Cloudformation. Use 'make setup' instead.")
 
-    # Don't bother checking, just update. Unlikely to throttle at this rate.
-    print("Updating policy for role webquills-scribe")
-    iam.put_role_policy(
-        RoleName='webquills-scribe',
-        PolicyName='webquills-scribe-general-policy',
-        PolicyDocument=json.dumps(WebquillsScribePolicyDoc)
+
+def init_bucket(archivist, region, account):
+    # Create bucket if necessary
+    s3 = boto3.client('s3', region_name=region)
+    try:
+        s3.head_bucket(Bucket=archivist.bucket)
+    except Exception as e:
+        if "404" not in str(e):
+            raise
+        s3.create_bucket(
+            Bucket=archivist.bucket,
+            CreateBucketConfiguration={'LocationConstraint': region}
+        )
+    # Bucket should exist now. Paint it Blue!
+    s3.put_bucket_versioning(
+        Bucket=archivist.bucket,
+        VersioningConfiguration={
+            'MFADelete': 'Disabled',
+            'Status': 'Enabled'
+        }
+    )
+    s3.put_bucket_website(
+        Bucket=archivist.bucket,
+        WebsiteConfiguration={
+            'ErrorDocument': {
+                'Key': '404.html'
+            },
+            'IndexDocument': {
+                'Suffix': 'index.html'
+            },
+        }
+    )
+    # TODO Should we also enable CORS by default?
+
+    # Add permission for S3 to invoke Lambda funcs for that bucket.
+    src_scribe = 'webquills-scribe-source-text-markdown-to-archetype'
+    lam = boto3.client('lambda', region_name=region)
+    lam.add_permission(
+        FunctionName=src_scribe,
+        StatementId='webquills-scribe-s3-%s' % archivist.bucket,
+        Action='lambda:InvokeFunction',
+        Principal='s3.amazonaws.com',
+        SourceArn="arn:aws:s3:::%s" % archivist.bucket,
+        SourceAccount=account
     )
 
-    # Create or update the policies that grant permissions to our functions
-    # arn:aws:iam::account-id:policy/policy-name
-    # Fucking hell this managed policy shit is complicated!
-    # TODO Switching to inline policies for now. Fix later.
-#    arn = 'arn:aws:iam::%s:policy/webquills/webquills-scribe' % account
-#    try:
-#        resp = iam.list_policy_versions(PolicyArn=arn)
-#    except Exception as e:
-#        if "NoSuchEntity" in str(e):
-#            print("Creating policy for webquills-scribe")
-#            resp = iam.create_policy(
-#                PolicyName="webquills-scribe",
-#                Path="/webquills/",
-#                PolicyDocument=json.dumps(WebquillsScribePolicyDoc),
-#                Description="Policy for WebQuills Scribe Lambda functions"
-#            )
-#        else:
-#            raise
-#    for version in resp['Versions']:
-#        if version['IsDefaultVersion']:
-#            latest = version['VersionId']
-#            break
-#    else:
-#        latest = None
-#    if latest:
-#        resp = iam.get_policy_version(PolicyArn=arn, VersionId=latest)
-#        print(repr(resp))
-#        if WebquillsScribePolicyDoc != resp['PolicyVersion']['Document']:
-#            print("Updating policy for webquills-scribe")
-#        else:
-#            print("Policy for webquills-scribe is up to date!")
-
-    # Accounts can have thousands of topics, but the listTopics call can only
-    # return 100 at a time. Rather than paginate forever, we just try to
-    # recreate them. The create method is idempotent, so it succeeds if the
-    # topic already exists.
-    sns = boto3.client("sns", region_name=region)
-    for topic in Topics:
-        print("Ensuring SNS Topic exists: %s" % topic)
-        resp = sns.create_topic(Name=topic)
-
-    # Create our Indexes in DynamoDB
-    # FIXME Index stuff really should not be hard coded here.
-    # These indexes cannot be modified in place, so making changes requires
-    # creating new tables with different names and reconfiguring the agents to
-    # know which tables to use.
-    dbd = boto3.client('dynamodb')
-    resp = dbd.list_tables()
-    if 'webquills-item-by-class' not in resp['TableNames']:
-        print("Creating DynamoDB table webquills-item-by-class")
-        dbd.create_table(
-            TableName='webquills-item-by-class',
-            AttributeDefinitions=[
-                {'AttributeName': 'bucket_itemclass', 'AttributeType': 'S'},
-                {'AttributeName': 's3key', 'AttributeType': 'S'},
-                {'AttributeName': 'updated_guid', 'AttributeType': 'S'},
-                {'AttributeName': 'category_updated_guid', 'AttributeType': 'S'}
-            ],
-            KeySchema=[
-                {'AttributeName': 'bucket_itemclass', 'KeyType': 'HASH'},
-                {'AttributeName': 's3key', 'KeyType': 'RANGE'}
-            ],
-            LocalSecondaryIndexes=[
-                {
-                    'IndexName': 'updated-guid-index',
-                    'Projection': {'ProjectionType': 'KEYS_ONLY'},
-                    'KeySchema': [
-                        {'AttributeName': 'bucket_itemclass', 'KeyType': 'HASH'},
-                        {'AttributeName': 'updated_guid', 'KeyType': 'RANGE'}
-                    ],
-                },
-                {
-                    'IndexName': 'category-updated-guid-index',
-                    'Projection': {'ProjectionType': 'KEYS_ONLY'},
-                    'KeySchema': [
-                        {'AttributeName': 'bucket_itemclass', 'KeyType': 'HASH'},
-                        {'AttributeName': 'category_updated_guid', 'KeyType': 'RANGE'}
-                    ],
-                },
-            ],
-            ProvisionedThroughput={
-                'ReadCapacityUnits': 5,
-                'WriteCapacityUnits': 5
-            },
-            StreamSpecification={
-                'StreamEnabled': True,
-                'StreamViewType': 'KEYS_ONLY'
+    # Add read-write permission on the bucket to the webquills-scribe role.
+    iam = boto3.client('iam', region_name=region)
+    policy_doc = {
+        "Statement": [
+            {
+                "Action": [
+                    "s3:*"
+                ],
+                "Effect": "Allow",
+                "Resource": [
+                    "arn:aws:s3:::%s/*" % archivist.bucket
+                ]
             }
-        )
-    if 'webquills-artifact-by-archetype' not in resp['TableNames']:
-        print("Creating DynamoDB table webquills-artifact-by-archetype")
-        dbd.create_table(
-            TableName='webquills-artifact-by-archetype',
-            AttributeDefinitions=[
-                {'AttributeName': 'archetype_guid', 'AttributeType': 'S'},
-                {'AttributeName': 'bucket_objectkey', 'AttributeType': 'S'},
-            ],
-            KeySchema=[
-                {'AttributeName': 'archetype_guid', 'KeyType': 'HASH'},
-                {'AttributeName': 'bucket_objectkey', 'KeyType': 'RANGE'}
-            ],
-            ProvisionedThroughput={
-                'ReadCapacityUnits': 5,
-                'WriteCapacityUnits': 5
-            },
-            StreamSpecification={
-                'StreamEnabled': True,
-                'StreamViewType': 'KEYS_ONLY'
-            }
-        )
+        ]
+    }
+    iam.put_role_policy(
+        RoleName='webquills-scribe',
+        PolicyName='webquills-scribe-s3-%s' % archivist.bucket,
+        PolicyDocument=json.dumps(policy_doc)
+    )
+    # PUT site.json
+    site_config_key = archivist.pathstrategy(resourcetype='config',
+                                             key='site.json')
+    site_config = archivist.new_resource(resourcetype='config',
+                                         key=site_config_key,
+                                         acl='public-read',
+                                         contenttype='application/json',
+                                         json=json.dumps(archivist.siteconfig)
+                                         )
+    archivist.save(site_config)
 
-    # TODO Create or update Lambda functions
-    src_scribe = 'webquills-scribe-source-text-markdown-to-archetype'
-    api = boto3.client('lambda')
-    try:
-        resp = api.get_function(FunctionName=src_scribe)
-    except Exception as e:
-        if 'ResourceNotFoundException' not in str(e):
-            raise
-        print("Creating Lambda function %s" % src_scribe)
-        api.create_function(
-            FunctionName=src_scribe,
-            Runtime='python2.7',
-            Role=scribe_role,
-            Handler='bluebucket.markdown.handle_message',
-            MemorySize=128,  # The default
-            Timeout=10,  # default=3
-            Publish=True,
-            Code={'S3Bucket': 'dist.webquills.net',
-                  'S3Key': 'alpha/bluebucket-lambda.zip'}
-        )
-    else:
-        print("Updating code for Lambda function %s" % src_scribe)
-        api.update_function_code(
-            FunctionName=src_scribe,
-            Publish=True,
-            S3Bucket='dist.webquills.net',
-            S3Key='alpha/bluebucket-lambda.zip'
-        )
+    # TODO PUT Schema files
+    # Configure Event Sources to send to SNS Topics for this bucket
+    pass
 
 
 # MAIN: Dispatch to individual handlers
@@ -332,4 +206,13 @@ def main():
 
     elif param['aws-install']:
         aws_update(param['--region'], param['--account'])
+
+    elif param['init-bucket']:
+        # FIXME I am ashamed to hard code this stuff, just trying to get DONE.
+        sitemeta = {
+            "title": "WebQuills: Content Management for Effective Web Sites",
+            "google_analytics_id": "UA-642116-5",
+        }
+        archivist = S3archivist(param['--bucket'], siteconfig=sitemeta)
+        init_bucket(archivist, param['--region'], param['--account'])
 

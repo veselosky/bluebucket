@@ -69,3 +69,5 @@ lambda: dist/bluebucket-lambda.zip
 deploy: lambda
 	aws s3 cp dist/bluebucket-lambda.zip s3://dist.webquills.net/alpha/bluebucket-lambda.zip --acl public-read
 
+setup:
+	aws cloudformation create-stack --template-body file://cloudformation.json --stack-name WebQuills --capabilities CAPABILITY_IAM

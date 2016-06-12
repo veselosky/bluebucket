@@ -1,0 +1,483 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Metadata": {
+    "AWS::CloudFormation::Designer": {
+      "78ccf81c-fb89-4e0d-b544-5979b497c424": {
+        "size": {
+          "width": 60,
+          "height": 60
+        },
+        "position": {
+          "x": 170,
+          "y": 10
+        },
+        "z": 1,
+        "embeds": []
+      },
+      "c333f6fe-8a6b-47a0-a2b6-9e1ac72328ce": {
+        "size": {
+          "width": 60,
+          "height": 60
+        },
+        "position": {
+          "x": 100,
+          "y": 160
+        },
+        "z": 1,
+        "embeds": [],
+        "dependson": [
+          "ba401108-3c68-4501-8bf7-9006c6f769fa"
+        ],
+        "isrelatedto": [
+          "ba401108-3c68-4501-8bf7-9006c6f769fa"
+        ]
+      },
+      "14d4a0f1-1828-4129-8054-fd226046384a": {
+        "size": {
+          "width": 60,
+          "height": 60
+        },
+        "position": {
+          "x": 190,
+          "y": 160
+        },
+        "z": 1,
+        "embeds": []
+      },
+      "f0cf35f1-abae-4147-bc03-150a013f2bdf": {
+        "size": {
+          "width": 60,
+          "height": 60
+        },
+        "position": {
+          "x": 290,
+          "y": 160
+        },
+        "z": 1,
+        "embeds": []
+      },
+      "e57cdb1d-8932-44f2-908c-c88ee0bde4cb": {
+        "size": {
+          "width": 60,
+          "height": 60
+        },
+        "position": {
+          "x": 360,
+          "y": 160
+        },
+        "z": 0,
+        "embeds": []
+      },
+      "ced88a21-c1d0-4989-af64-b4295533f816": {
+        "size": {
+          "width": 60,
+          "height": 60
+        },
+        "position": {
+          "x": 470,
+          "y": 170
+        },
+        "z": 0,
+        "embeds": []
+      },
+      "102fd7e8-3406-470b-9221-1a0c36637b3a": {
+        "size": {
+          "width": 60,
+          "height": 60
+        },
+        "position": {
+          "x": 540,
+          "y": 170
+        },
+        "z": 0,
+        "embeds": []
+      },
+      "ba401108-3c68-4501-8bf7-9006c6f769fa": {
+        "size": {
+          "width": 60,
+          "height": 60
+        },
+        "position": {
+          "x": 40,
+          "y": 80
+        },
+        "z": 0,
+        "embeds": [],
+        "dependson": [
+          "78ccf81c-fb89-4e0d-b544-5979b497c424"
+        ],
+        "isrelatedto": [
+          "78ccf81c-fb89-4e0d-b544-5979b497c424"
+        ]
+      },
+      "3c0f0afd-42e2-48ec-a123-c2134a2ee022": {
+        "source": {
+          "id": "ba401108-3c68-4501-8bf7-9006c6f769fa"
+        },
+        "target": {
+          "id": "78ccf81c-fb89-4e0d-b544-5979b497c424"
+        },
+        "z": 2
+      },
+      "8540c78a-c55b-489c-9224-0b0152e12079": {
+        "source": {
+          "id": "c333f6fe-8a6b-47a0-a2b6-9e1ac72328ce"
+        },
+        "target": {
+          "id": "ba401108-3c68-4501-8bf7-9006c6f769fa"
+        },
+        "z": 2
+      },
+      "8cd79099-67c0-405e-957c-b73fd0181c13": {
+        "size": {
+          "width": 60,
+          "height": 60
+        },
+        "position": {
+          "x": 330,
+          "y": 60
+        },
+        "z": 0,
+        "embeds": []
+      },
+      "244fd599-596a-4b20-85cb-fec189b3f444": {
+        "size": {
+          "width": 60,
+          "height": 60
+        },
+        "position": {
+          "x": 520,
+          "y": 90
+        },
+        "z": 0,
+        "embeds": []
+      },
+      "4099289f-1de6-4173-9d5d-dfcf5ae226d2": {
+        "size": {
+          "width": 60,
+          "height": 60
+        },
+        "position": {
+          "x": 150,
+          "y": 80
+        },
+        "z": 0,
+        "embeds": [],
+        "dependson": [
+          "c333f6fe-8a6b-47a0-a2b6-9e1ac72328ce"
+        ]
+      },
+      "5472ac31-eb35-4b31-99c2-b5cefce6e863": {
+        "source": {
+          "id": "4099289f-1de6-4173-9d5d-dfcf5ae226d2"
+        },
+        "target": {
+          "id": "c333f6fe-8a6b-47a0-a2b6-9e1ac72328ce"
+        },
+        "z": 2
+      }
+    }
+  },
+  "Resources": {
+    "WebQuillsScribeRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "Path": "/webquills/",
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "WebQuillsScribeRolePolicy",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Action": [
+                    "logs:CreateLogGroup",
+                    "logs:CreateLogStream",
+                    "logs:PutLogEvents"
+                  ],
+                  "Effect": "Allow",
+                  "Resource": "arn:aws:logs:*:*:*"
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "sns:Publish",
+                    "sns:Receive",
+                    "sns:Subscribe"
+                  ],
+                  "Resource": "arn:aws:sns:*:*:webquills-*"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "Metadata": {
+        "AWS::CloudFormation::Designer": {
+          "id": "78ccf81c-fb89-4e0d-b544-5979b497c424"
+        }
+      }
+    },
+    "WebQuillsOnSaveSourceTextMarkdown": {
+      "Type": "AWS::SNS::Topic",
+      "Properties": {
+        "TopicName": "webquills-on-save-source-text-markdown",
+        "Subscription": [
+          {
+            "Protocol": "lambda",
+            "Endpoint": {
+              "Fn::GetAtt": [
+                "WebQuillsScribeSourceTextMarkdownToArchetype",
+                "Arn"
+              ]
+            }
+          }
+        ]
+      },
+      "Metadata": {
+        "AWS::CloudFormation::Designer": {
+          "id": "c333f6fe-8a6b-47a0-a2b6-9e1ac72328ce"
+        }
+      },
+      "DependsOn": [
+        "WebQuillsScribeSourceTextMarkdownToArchetype"
+      ]
+    },
+    "WebQuillsOnRemoveSourceTextMarkdown": {
+      "Type": "AWS::SNS::Topic",
+      "Properties": {
+        "TopicName": "webquills-on-remove-source-text-markdown"
+      },
+      "Metadata": {
+        "AWS::CloudFormation::Designer": {
+          "id": "14d4a0f1-1828-4129-8054-fd226046384a"
+        }
+      }
+    },
+    "WebQuillsOnSaveItemPageArticle": {
+      "Type": "AWS::SNS::Topic",
+      "Properties": {
+        "TopicName": "webquills-on-save-item-page-article"
+      },
+      "Metadata": {
+        "AWS::CloudFormation::Designer": {
+          "id": "f0cf35f1-abae-4147-bc03-150a013f2bdf"
+        }
+      }
+    },
+    "WebQuillsOnRemoveItemPageArticle": {
+      "Type": "AWS::SNS::Topic",
+      "Properties": {
+        "TopicName": "webquills-on-remove-item-page-article"
+      },
+      "Metadata": {
+        "AWS::CloudFormation::Designer": {
+          "id": "e57cdb1d-8932-44f2-908c-c88ee0bde4cb"
+        }
+      }
+    },
+    "WebQuillsOnSaveArtifact": {
+      "Type": "AWS::SNS::Topic",
+      "Properties": {
+        "TopicName": "webquills-on-save-artifact"
+      },
+      "Metadata": {
+        "AWS::CloudFormation::Designer": {
+          "id": "ced88a21-c1d0-4989-af64-b4295533f816"
+        }
+      }
+    },
+    "WebQuillsOnRemoveArtifact": {
+      "Type": "AWS::SNS::Topic",
+      "Properties": {
+        "TopicName": "webquills-on-remove-artifact"
+      },
+      "Metadata": {
+        "AWS::CloudFormation::Designer": {
+          "id": "102fd7e8-3406-470b-9221-1a0c36637b3a"
+        }
+      }
+    },
+    "WebQuillsScribeSourceTextMarkdownToArchetype": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "FunctionName": "webquills-scribe-source-text-markdown-to-archetype",
+        "Runtime": "python2.7",
+        "Role": {
+          "Fn::GetAtt": [
+            "WebQuillsScribeRole",
+            "Arn"
+          ]
+        },
+        "Handler": "bluebucket.markdown.handle_message",
+        "MemorySize": 128,
+        "Timeout": 10,
+        "Code": {
+          "S3Bucket": "dist.webquills.net",
+          "S3Key": "alpha/bluebucket-lambda.zip"
+        }
+      },
+      "Metadata": {
+        "AWS::CloudFormation::Designer": {
+          "id": "ba401108-3c68-4501-8bf7-9006c6f769fa"
+        }
+      },
+      "DependsOn": [
+        "WebQuillsScribeRole"
+      ]
+    },
+    "WebQuillsItemByClass": {
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "TableName": "webquills-item-by-class",
+        "AttributeDefinitions": [
+          {
+            "AttributeName": "bucket_itemclass",
+            "AttributeType": "S"
+          },
+          {
+            "AttributeName": "s3key",
+            "AttributeType": "S"
+          },
+          {
+            "AttributeName": "updated_guid",
+            "AttributeType": "S"
+          },
+          {
+            "AttributeName": "category_updated_guid",
+            "AttributeType": "S"
+          }
+        ],
+        "KeySchema": [
+          {
+            "AttributeName": "bucket_itemclass",
+            "KeyType": "HASH"
+          },
+          {
+            "AttributeName": "s3key",
+            "KeyType": "RANGE"
+          }
+        ],
+        "LocalSecondaryIndexes": [
+          {
+            "IndexName": "updated-guid-index",
+            "Projection": {
+              "ProjectionType": "KEYS_ONLY"
+            },
+            "KeySchema": [
+              {
+                "AttributeName": "bucket_itemclass",
+                "KeyType": "HASH"
+              },
+              {
+                "AttributeName": "updated_guid",
+                "KeyType": "RANGE"
+              }
+            ]
+          },
+          {
+            "IndexName": "category-updated-guid-index",
+            "Projection": {
+              "ProjectionType": "KEYS_ONLY"
+            },
+            "KeySchema": [
+              {
+                "AttributeName": "bucket_itemclass",
+                "KeyType": "HASH"
+              },
+              {
+                "AttributeName": "category_updated_guid",
+                "KeyType": "RANGE"
+              }
+            ]
+          }
+        ],
+        "ProvisionedThroughput": {
+          "ReadCapacityUnits": 5,
+          "WriteCapacityUnits": 5
+        },
+        "StreamSpecification": {
+          "StreamEnabled": true,
+          "StreamViewType": "KEYS_ONLY"
+        }
+      },
+      "Metadata": {
+        "AWS::CloudFormation::Designer": {
+          "id": "8cd79099-67c0-405e-957c-b73fd0181c13"
+        }
+      }
+    },
+    "WebQuillsArtifactByArchetype": {
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "TableName": "webquills-artifact-by-archetype",
+        "AttributeDefinitions": [
+          {
+            "AttributeName": "archetype_guid",
+            "AttributeType": "S"
+          },
+          {
+            "AttributeName": "bucket_objectkey",
+            "AttributeType": "S"
+          }
+        ],
+        "KeySchema": [
+          {
+            "AttributeName": "archetype_guid",
+            "KeyType": "HASH"
+          },
+          {
+            "AttributeName": "bucket_objectkey",
+            "KeyType": "RANGE"
+          }
+        ],
+        "ProvisionedThroughput": {
+          "ReadCapacityUnits": 5,
+          "WriteCapacityUnits": 5
+        },
+        "StreamSpecification": {
+          "StreamEnabled": true,
+          "StreamViewType": "KEYS_ONLY"
+        }
+      },
+      "Metadata": {
+        "AWS::CloudFormation::Designer": {
+          "id": "244fd599-596a-4b20-85cb-fec189b3f444"
+        }
+      }
+    },
+    "WebQuillsPermitSNSInvoke": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "Principal": "sns.amazonaws.com",
+        "SourceArn": {
+          "Fn:GetAtt": [
+            "WebQuillsOnSaveSourceTextMarkdown",
+            "Arn"
+          ]
+        }
+      },
+      "Metadata": {
+        "AWS::CloudFormation::Designer": {
+          "id": "4099289f-1de6-4173-9d5d-dfcf5ae226d2"
+        }
+      },
+      "DependsOn": [
+        "WebQuillsOnSaveSourceTextMarkdown"
+      ]
+    }
+  }
+}
