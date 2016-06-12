@@ -56,8 +56,16 @@ class DefaultPathStrategy(object):
             return path.join(self.source_prefix, itemtype, guid + '.json')
 
         elif resourcetype == 'artifact':
+            # FIXME Construct Artifact paths from metadata for SEO
             key = meta['key']
             return self.unprefix(key)
+
+        elif resourcetype == 'config':
+            # config files live in the archetypes directory
+            key = meta['key']
+            if not key.startswith(self.archetype_prefix):
+                key = path.join(self.archetype_prefix, key)
+            return key
 
         raise Exception("No path strategy found.")
 
