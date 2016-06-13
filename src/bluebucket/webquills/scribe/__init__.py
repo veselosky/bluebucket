@@ -15,5 +15,3 @@
 #   limitations under the License.
 #
 from __future__ import absolute_import, print_function, unicode_literals
-from .scribe.markdown import source_text_mardown_to_archetype  # noqa
-

@@ -88,7 +88,7 @@ class S3resource(object):
     @data.setter
     def data(self, newdata):
         # dumper only outputs ascii chars, so this should be safe
-        self.content = json.dumps(newdata, cls=SmartJSONEncoder)
+        self.content = json.dumps(newdata, cls=SmartJSONEncoder, sort_keys=True)
 
     def as_s3object(self, bucket=None):
         s3obj = dict(

@@ -25,14 +25,12 @@ Of special note:
 """
 from __future__ import absolute_import, print_function
 
-import json
 from dateutil.parser import parse as parse_date
 import markdown
 from markdown.extensions.toc import TocExtension
 import pytz
 
-from .util import SmartJSONEncoder
-from .archivist import parse_aws_event, S3archivist
+from bluebucket.archivist import parse_aws_event, S3archivist
 
 extensions = [
     'markdown.extensions.extra',
@@ -69,16 +67,15 @@ def on_save(archivist, resource):
     timezone = archivist.siteconfig.get('timezone', pytz.utc)
     metadict = to_archetype(resource.text, timezone)
     key = archivist.pathstrategy.path_for(resourcetype='archetype', **metadict)
-    content = json.dumps(metadict, cls=SmartJSONEncoder, sort_keys=True)
     archetype = archivist.new_resource(key=key,
-                                       content=content,
+                                       data=metadict,
                                        contenttype='application/json',
                                        resourcetype='archetype')
     archivist.save(archetype)
     return [archetype]
 
 
-def handle_message(message, context):
+def source_text_mardown_to_archetype(message, context):
     events = parse_aws_event(message)
     for event in events:
         if event.is_save_event:

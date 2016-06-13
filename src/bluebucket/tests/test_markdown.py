@@ -19,7 +19,7 @@ import mock
 import pytz
 
 from bluebucket.archivist import S3archivist
-import bluebucket.markdown as mark
+import webquills.scribe.markdown as mark
 
 testbucket = 'bluebucket.mindvessel.net'
 
