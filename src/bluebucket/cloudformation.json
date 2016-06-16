@@ -163,7 +163,13 @@
         },
         "z": 0,
         "embeds": [],
+        "isassociatedwith": [
+          "c333f6fe-8a6b-47a0-a2b6-9e1ac72328ce"
+        ],
         "dependson": [
+          "c333f6fe-8a6b-47a0-a2b6-9e1ac72328ce"
+        ],
+        "isrelatedto": [
           "c333f6fe-8a6b-47a0-a2b6-9e1ac72328ce"
         ]
       },
@@ -175,6 +181,67 @@
           "id": "c333f6fe-8a6b-47a0-a2b6-9e1ac72328ce"
         },
         "z": 2
+      },
+      "65b4bd84-a933-4a25-b6d1-dc16c7a39e1c": {
+        "size": {
+          "width": 60,
+          "height": 60
+        },
+        "position": {
+          "x": -55.700884730964134,
+          "y": 171.19717766082357
+        },
+        "z": 0,
+        "embeds": []
+      },
+      "8c74bce1-cb47-49f6-8bc5-bd6225fb5a17": {
+        "size": {
+          "width": 60,
+          "height": 60
+        },
+        "position": {
+          "x": 30,
+          "y": 230
+        },
+        "z": 0,
+        "embeds": [],
+        "isassociatedwith": [
+          "c333f6fe-8a6b-47a0-a2b6-9e1ac72328ce",
+          "14d4a0f1-1828-4129-8054-fd226046384a",
+          "f0cf35f1-abae-4147-bc03-150a013f2bdf",
+          "e57cdb1d-8932-44f2-908c-c88ee0bde4cb",
+          "ced88a21-c1d0-4989-af64-b4295533f816",
+          "102fd7e8-3406-470b-9221-1a0c36637b3a"
+        ],
+        "dependson": [
+          "65b4bd84-a933-4a25-b6d1-dc16c7a39e1c"
+        ],
+        "isrelatedto": [
+          "c333f6fe-8a6b-47a0-a2b6-9e1ac72328ce",
+          "14d4a0f1-1828-4129-8054-fd226046384a",
+          "f0cf35f1-abae-4147-bc03-150a013f2bdf",
+          "e57cdb1d-8932-44f2-908c-c88ee0bde4cb",
+          "ced88a21-c1d0-4989-af64-b4295533f816",
+          "102fd7e8-3406-470b-9221-1a0c36637b3a"
+        ]
+      },
+      "20f18166-c1a5-4e6c-9048-c000cd02ae6b": {
+        "source": {
+          "id": "8c74bce1-cb47-49f6-8bc5-bd6225fb5a17"
+        },
+        "target": {
+          "id": "65b4bd84-a933-4a25-b6d1-dc16c7a39e1c"
+        },
+        "z": 2
+      },
+      "691181ce-8e05-4f9c-87cd-ef2cc588a20e": {
+        "source": {
+          "id": "c333f6fe-8a6b-47a0-a2b6-9e1ac72328ce"
+        },
+        "target": {
+          "id": "8c74bce1-cb47-49f6-8bc5-bd6225fb5a17"
+        },
+        "z": 3
       }
     }
   },
@@ -409,7 +476,6 @@
           "WriteCapacityUnits": 5
         },
         "StreamSpecification": {
-          "StreamEnabled": true,
           "StreamViewType": "KEYS_ONLY"
         }
       },
@@ -448,7 +514,6 @@
           "WriteCapacityUnits": 5
         },
         "StreamSpecification": {
-          "StreamEnabled": true,
           "StreamViewType": "KEYS_ONLY"
         }
       },
@@ -462,12 +527,15 @@
       "Type": "AWS::Lambda::Permission",
       "Properties": {
         "Action": "lambda:InvokeFunction",
-        "Principal": "sns.amazonaws.com",
-        "SourceArn": {
-          "Fn:GetAtt": [
-            "WebQuillsOnSaveSourceTextMarkdown",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "WebQuillsScribeSourceTextMarkdownToArchetype",
             "Arn"
           ]
+        },
+        "Principal": "sns.amazonaws.com",
+        "SourceArn": {
+          "Ref": "WebQuillsOnSaveSourceTextMarkdown"
         }
       },
       "Metadata": {
@@ -478,6 +546,68 @@
       "DependsOn": [
         "WebQuillsOnSaveSourceTextMarkdown"
       ]
+    },
+    "S3SNSAccessPolicy": {
+      "Type": "AWS::SNS::TopicPolicy",
+      "Properties": {
+        "Topics": [
+          {
+            "Ref": "WebQuillsOnSaveSourceTextMarkdown"
+          },
+          {
+            "Ref": "WebQuillsOnRemoveSourceTextMarkdown"
+          },
+          {
+            "Ref": "WebQuillsOnSaveItemPageArticle"
+          },
+          {
+            "Ref": "WebQuillsOnRemoveItemPageArticle"
+          },
+          {
+            "Ref": "WebQuillsOnSaveArtifact"
+          },
+          {
+            "Ref": "WebQuillsOnRemoveArtifact"
+          }
+        ],
+        "PolicyDocument": {
+          "Version": "2008-10-17",
+          "Id": "S3-publish-permission",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": "*"
+              },
+              "Action": [
+                "SNS:Publish"
+              ],
+              "Resource": "*",
+              "Condition": {
+                "ArnLike": {
+                  "aws:SourceArn": {
+                    "Fn::Join": [
+                      "",
+                      [
+                        "arn:aws:s3:",
+                        {
+                          "Ref": "AWS::AccountId"
+                        },
+                        ":*:*"
+                      ]
+                    ]
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      "Metadata": {
+        "AWS::CloudFormation::Designer": {
+          "id": "8c74bce1-cb47-49f6-8bc5-bd6225fb5a17"
+        }
+      }
     }
   }
 }
