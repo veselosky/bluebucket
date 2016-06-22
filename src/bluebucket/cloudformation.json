@@ -546,68 +546,6 @@
       "DependsOn": [
         "WebQuillsOnSaveSourceTextMarkdown"
       ]
-    },
-    "S3SNSAccessPolicy": {
-      "Type": "AWS::SNS::TopicPolicy",
-      "Properties": {
-        "Topics": [
-          {
-            "Ref": "WebQuillsOnSaveSourceTextMarkdown"
-          },
-          {
-            "Ref": "WebQuillsOnRemoveSourceTextMarkdown"
-          },
-          {
-            "Ref": "WebQuillsOnSaveItemPageArticle"
-          },
-          {
-            "Ref": "WebQuillsOnRemoveItemPageArticle"
-          },
-          {
-            "Ref": "WebQuillsOnSaveArtifact"
-          },
-          {
-            "Ref": "WebQuillsOnRemoveArtifact"
-          }
-        ],
-        "PolicyDocument": {
-          "Version": "2008-10-17",
-          "Id": "S3-publish-permission",
-          "Statement": [
-            {
-              "Effect": "Allow",
-              "Principal": {
-                "AWS": "*"
-              },
-              "Action": [
-                "SNS:Publish"
-              ],
-              "Resource": "*",
-              "Condition": {
-                "ArnLike": {
-                  "aws:SourceArn": {
-                    "Fn::Join": [
-                      "",
-                      [
-                        "arn:aws:s3:",
-                        {
-                          "Ref": "AWS::AccountId"
-                        },
-                        ":*:*"
-                      ]
-                    ]
-                  }
-                }
-              }
-            }
-          ]
-        }
-      },
-      "Metadata": {
-        "AWS::CloudFormation::Designer": {
-          "id": "8c74bce1-cb47-49f6-8bc5-bd6225fb5a17"
-        }
-      }
     }
   }
 }
