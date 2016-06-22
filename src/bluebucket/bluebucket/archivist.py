@@ -18,10 +18,14 @@ from __future__ import absolute_import, print_function, unicode_literals
 import boto3
 from dateutil.parser import parse as parse_date
 import json
+import logging
 import re
 from .pathstrategy import DefaultPathStrategy
 from .util import SmartJSONEncoder, gunzip, gzip
 from pytz import timezone
+
+
+logger = logging.getLogger(__name__)
 
 
 def inflate_config(config):
@@ -246,5 +250,9 @@ def parse_aws_event(message, **kwargs):
         if ev['eventSource'] == 'aws:s3':
             # got an actual S3 event, direct
             events.append(S3event(ev))
+        else:
+            # Event from elsewhere. Log it.
+            logger.warn("Unrecognized event message:\n%s" %
+                        json.dumps(ev, sort_keys=True))
 
     return events
