@@ -57,8 +57,6 @@ dist/bluebucket-lambda.zip:
 	rm -rf build/lambda/*.dist-info build/lambda/*.egg-info
 	# boto3 is provided by Lambda, so do not package it or its deps
 	rm -rf build/lambda/boto3 build/lambda/botocore build/lambda/concurrent build/lambda/jmespath build/lambda/docutils
-	# Do not need the CLI
-	rm -r build/lambda/webquills build/lambda/docopt.py
 	# shaves ~1MB, but how much time cost to recompile?
 	find ./build/lambda -name '*.pyc' -exec rm -f {} +
 	find . -name '__pycache__' -exec rm -fr {} +
@@ -71,3 +69,6 @@ deploy: lambda
 
 setup:
 	aws cloudformation create-stack --template-body file://cloudformation.json --stack-name WebQuills --capabilities CAPABILITY_IAM
+
+update-lambda: lambda
+	aws lambda update-function-code --function-name webquills-scribe-source-text-markdown-to-archetype --s3-bucket dist.webquills.net --s3-key alpha/bluebucket-lambda.zip --publish

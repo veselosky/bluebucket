@@ -246,8 +246,14 @@ class S3event(object):
 def parse_aws_event(message, **kwargs):
     eventlist = message['Records']
     events = []
+    # WTF Amazon?! Key names not consistent across event sources!!!
     for ev in eventlist:
-        if ev['eventSource'] == 'aws:s3':
+        if 'eventSource' in ev:  # S3 events
+            src = ev['eventSource']
+        elif 'EventSource' in ev:  # SNS events
+            src = ev['EventSource']
+
+        if src == 'aws:s3':
             # got an actual S3 event, direct
             events.append(S3event(ev))
         else:

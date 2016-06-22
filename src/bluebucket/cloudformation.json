@@ -388,7 +388,7 @@
             "Arn"
           ]
         },
-        "Handler": "bluebucket.markdown.handle_message",
+        "Handler": "webquills.source_text_mardown_to_archetype",
         "MemorySize": 128,
         "Timeout": 10,
         "Code": {
