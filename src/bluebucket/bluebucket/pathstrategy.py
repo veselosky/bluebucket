@@ -16,6 +16,7 @@
 #
 from __future__ import absolute_import, print_function, unicode_literals
 import posixpath as path
+import string
 
 
 # The path strategy object will attempt to calculate a path for a resource given
@@ -51,9 +52,11 @@ class DefaultPathStrategy(object):
             # Archetypes do not allow any freedom in naming, they are always
             # itemtype and guid
             guid = meta['guid']  # required in this case
-            itemtype = meta['itemtype']
-            # TODO validate the format of the itemtype string
-            return path.join(self.source_prefix, itemtype, guid + '.json')
+
+            # FIXME Ensure each component is capitalized.
+            itemtype = string.capwords(meta['itemtype'], '/')
+
+            return path.join(self.archetype_prefix, itemtype, guid + '.json')
 
         elif resourcetype == 'artifact':
             # FIXME Construct Artifact paths from metadata for SEO

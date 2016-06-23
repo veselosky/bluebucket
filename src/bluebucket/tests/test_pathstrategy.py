@@ -48,3 +48,16 @@ def test_markdown_source_no_guid():
     with pytest.raises(Exception):
         p.path_for(**meta)
 
+
+def test_archetype():
+    p = DefaultPathStrategy()
+
+    meta = {
+        "resourcetype": "archetype",
+        "itemtype": "item/page/article",
+        "contenttype": "application/json",
+        "guid": "653f3ad8-cf4e-43db-afcb-a06ff3e2bfdb"
+    }
+    target = p.path_for(**meta)
+    assert target ==\
+        '_A/Item/Page/Article/653f3ad8-cf4e-43db-afcb-a06ff3e2bfdb.json'
