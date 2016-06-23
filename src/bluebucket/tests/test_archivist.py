@@ -426,3 +426,11 @@ def test_parse_aws_event():
     assert len(result) == 1
     assert type(result[0]) == S3event
 
+
+def test_parse_sns_event():
+    message = stubs.sns_event
+    result = parse_aws_event(message)
+
+    assert len(result) == 1
+    assert type(result[0]) == S3event
+
