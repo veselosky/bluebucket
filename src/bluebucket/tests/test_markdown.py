@@ -56,6 +56,7 @@ def test_transform_on_save():
     print(archetype.content)
     print(out)
     assert archetype.content == out
+    assert archetype.acl == 'public-read'
     assert archetype.contenttype.startswith('application/json')
     assert archetype.resourcetype == 'archetype'
     assert archetype.key.endswith('.json')

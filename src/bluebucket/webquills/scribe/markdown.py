@@ -26,12 +26,14 @@ Of special note:
 from __future__ import absolute_import, print_function
 
 from dateutil.parser import parse as parse_date
+import logging
 import markdown
 from markdown.extensions.toc import TocExtension
 import pytz
 
 from bluebucket.archivist import parse_aws_event, S3archivist
 
+logger = logging.getLogger(__name__)
 extensions = [
     'markdown.extensions.extra',
     'markdown.extensions.admonition',
@@ -40,7 +42,6 @@ extensions = [
     'markdown.extensions.sane_lists',
     TocExtension(permalink=True),  # replaces headerId
 ]
-accepts_suffixes = ['.markdown', '.md', '.mdown']
 md = markdown.Markdown(extensions=extensions, lazy_ol=False,
                        output_format='html5')
 
@@ -71,15 +72,19 @@ def on_save(archivist, resource):
                                        data=metadict,
                                        contenttype='application/json',
                                        resourcetype='archetype')
-    archivist.save(archetype)
+    archivist.publish(archetype)
     return [archetype]
 
 
 def source_text_mardown_to_archetype(message, context):
     events = parse_aws_event(message)
+    if not events:
+        logger.warn("No events found in message!\n%s" % message)
     for event in events:
         if event.is_save_event:
             archivist = S3archivist(event.bucket)
             resource = archivist.get(event.key)
             on_save(archivist, resource)
+        else:
+            logger.warn("Not a save event!\n%s" % event)
 

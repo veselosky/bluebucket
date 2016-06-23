@@ -103,7 +103,7 @@ def permit_bucket_publish(bucket, topic_arn, region):
 # anything that has a JSON schema in the bluebucket.schemas package. If
 # supplied, <title> will be added to the metadata.
 def new_markdown(item_type, title=None, **kwargs):
-    metas = ['item_type: %s' % item_type, 'guid: %s' % uuid.uuid4()]
+    metas = ['itemtype: %s' % item_type, 'guid: %s' % uuid.uuid4()]
     for key in kwargs:
         metas.append('%s: %s' % (key, kwargs[key]))
     if title is not None:
@@ -134,7 +134,7 @@ def publish(archivist, text):
         text=text,
         **assetmeta
     )
-    archivist.save(asset)
+    archivist.publish(asset)
 
 
 # TODO quill preview <bucket> <itemfile>
