@@ -248,23 +248,21 @@ class S3event(object):
         return 'ObjectCreated' in self.name
 
 
-# TODO support SNS messages
 def parse_aws_event(message, **kwargs):
     eventlist = message['Records']
     events = []
-    # WTF Amazon?! Key names not consistent across event sources!!!
-    for ev in eventlist:
-        if 'eventSource' in ev:  # S3 events
-            src = ev['eventSource']
-        elif 'EventSource' in ev:  # SNS events
-            src = ev['EventSource']
-
-        if src == 'aws:s3':
-            # got an actual S3 event, direct
-            events.append(S3event(ev))
+    for event in eventlist:
+        if 'eventSource' in event and event['eventSource'] == 'aws:s3':
+            events.append(S3event(event))
+        elif "EventSource" in event and event['EventSource'] == "aws:sns":
+            ev_list = json.loads(event['Sns']['Message'])['Records']
+            for ev in ev_list:
+                if 'eventSource' in ev and ev['eventSource'] == 'aws:s3':
+                    events.append(S3event(ev))
         else:
             # Event from elsewhere. Log it.
             logger.warn("Unrecognized event message:\n%s" %
-                        json.dumps(ev, sort_keys=True))
+                        json.dumps(message, sort_keys=True))
+            return []
 
     return events
