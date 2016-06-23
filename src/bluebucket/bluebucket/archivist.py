@@ -143,7 +143,8 @@ class S3archivist(object):
             self.s3 = boto3.client('s3')
 
         if self.siteconfig is None:
-            self.siteconfig = inflate_config(self.get('bluebucket.json').data)
+            cfg_path = self.archetype_prefix + 'site.json'
+            self.siteconfig = inflate_config(self.get(cfg_path).data)
 
     def get(self, filename):
         return S3resource.from_s3object(self.s3.get_object(Bucket=self.bucket,
