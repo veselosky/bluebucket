@@ -172,6 +172,11 @@ class S3archivist(object):
         s3obj = resource.as_s3object(self.bucket)
         return self.s3.put_object(**s3obj)
 
+    def publish(self, resource):
+        "Same as save, but ensures the resource is publicly readable."
+        resource.acl = 'public-read'
+        self.save(resource)
+
     def persist(self, resourcelist):
         for resource in resourcelist:
             self.save(resource)
