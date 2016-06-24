@@ -16,8 +16,3 @@
 #
 from __future__ import absolute_import, print_function, unicode_literals
 
-# We import these here because AWS Lambda can only execute functions containing
-# a single dot :P
-from .scribe.markdown import source_text_mardown_to_archetype  # noqa
-from .indexer.item import update_item_index  # noqa
-
