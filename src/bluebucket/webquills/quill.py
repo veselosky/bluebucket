@@ -30,15 +30,17 @@ Options:
 """
 from __future__ import absolute_import, print_function, unicode_literals
 from bluebucket.archivist import S3archivist
-from webquills.scribe.markdown import to_archetype
+from datetime import datetime
 from docopt import docopt
 from io import open
 from os import path
 from slugify import slugify
+from webquills.scribe.markdown import to_archetype
 
 import boto3
 import logging
 import json
+import pytz
 import sys
 import uuid
 
@@ -103,13 +105,37 @@ def permit_bucket_publish(bucket, topic_arn, region):
 # anything that has a JSON schema in the bluebucket.schemas package. If
 # supplied, <title> will be added to the metadata.
 def new_markdown(item_type, title=None, **kwargs):
+    # Some defaults
+    now = datetime.now()
+    # FIXME Timezones are hard. Hard coding for now.
+    now = pytz.timezone('America/New_York').localize(now)
+    text = ""
+
     metas = ['itemtype: %s' % item_type, 'guid: %s' % uuid.uuid4()]
     for key in kwargs:
         metas.append('%s: %s' % (key, kwargs[key]))
-    if title is not None:
+    if 'created' not in kwargs:
+        metas.append('updated: %s' % now.isoformat())
+    if 'updated' not in kwargs:
+        metas.append('updated: %s' % now.isoformat())
+    if 'category' not in kwargs:
+        metas.append('category: uncategorized')
+        text = text + '''
+        For SEO, please assign a keyword-rich category like "keyword/seo" above.
+        It will be used to generate a URL.
+        '''
+
+    if title:
         metas.append('slug: %s' % slugify(title, stopwords=stopwords))
         metas.append('title: %s' % title)
-    return "\n".join(metas) + "\n\n"
+    else:
+        metas.append('slug:')
+        metas.append('title:')
+        text = text + '''
+        You need to set a title and slug. Slug will be used to generate a URL.
+        '''
+
+    return "\n".join(metas) + "\n\n" + text
 
 
 # quill publish <bucket> <itemfile>
