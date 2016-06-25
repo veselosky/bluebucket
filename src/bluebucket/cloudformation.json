@@ -347,7 +347,7 @@
                   "Resource": "arn:aws:sns:*:*:webquills-*"
                 },
                 {
-                  "Sid": "webquills-indexer-permit-item-table",
+                  "Sid": "WebQuillsIndexerPermitAllTables",
                   "Effect": "Allow",
                   "Action": [
                     "dynamodb:GetItem",
@@ -358,14 +358,7 @@
                     "dynamodb:DeleteItem",
                     "dynamodb:BatchWriteItem"
                   ],
-                  "Resource": [
-                    {
-                      "Ref": "WebQuillsItemByClass"
-                    },
-                    {
-                      "Ref": "WebQuillsArtifactByArchetype"
-                    }
-                  ]
+                  "Resource": "*"
                 }
               ]
             }
