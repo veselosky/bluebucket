@@ -72,3 +72,4 @@ setup:
 
 update-lambda: lambda
 	aws lambda update-function-code --function-name webquills-scribe-source-text-markdown-to-archetype --s3-bucket dist.webquills.net --s3-key alpha/bluebucket-lambda.zip --publish
+	aws lambda update-function-code --function-name webquills-indexer-item --s3-bucket dist.webquills.net --s3-key alpha/bluebucket-lambda.zip --publish

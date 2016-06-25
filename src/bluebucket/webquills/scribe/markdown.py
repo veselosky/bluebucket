@@ -53,9 +53,14 @@ def to_archetype(text, timezone=pytz.utc):
     metadata = md.Meta
     metadict = {}
     for key, value in metadata.items():
-        if key in ['date', 'published', 'updated']:
+        if key in ['created', 'date', 'published', 'updated']:
             # because humans are sloppy, we parse and normalize date values
-            metadict[key] = timezone.localize(parse_date(value[0]))
+            dt = parse_date(value[0])
+            if dt.tzinfo:
+                dt = dt.astimezone(timezone)
+            else:
+                dt = timezone.localize(dt)
+            metadict[key] = dt
         else:
             # reads everything as list, but most values should be scalar
             metadict[key] = value[0] if len(value) == 1 else value

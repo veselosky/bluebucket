@@ -255,7 +255,12 @@ def parse_aws_event(message, **kwargs):
         if 'eventSource' in event and event['eventSource'] == 'aws:s3':
             events.append(S3event(event))
         elif "EventSource" in event and event['EventSource'] == "aws:sns":
-            ev_list = json.loads(event['Sns']['Message'])['Records']
+            try:
+                unwrapped = json.loads(event['Sns']['Message'])
+                ev_list = unwrapped['Records']
+            except Exception:
+                logger.error(json.dumps(event))
+                raise
             for ev in ev_list:
                 if 'eventSource' in ev and ev['eventSource'] == 'aws:s3':
                     events.append(S3event(ev))

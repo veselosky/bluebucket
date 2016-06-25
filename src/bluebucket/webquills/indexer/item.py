@@ -149,7 +149,7 @@ def update_item_index(message, context):
         logger.warn("No events found in message!\n%s" % message)
     for event in events:
         if event.is_save_event:
-            db = boto3.resource('dynamodb', region_name=event['awsRegion'])
+            db = boto3.resource('dynamodb', region_name=event.region)
             archivist = S3archivist(event.bucket)
             resource = archivist.get(event.key)
             on_save(db, archivist, resource)
