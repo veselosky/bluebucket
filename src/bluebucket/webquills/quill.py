@@ -241,11 +241,10 @@ def init_bucket(archivist, region, account):
                                                       key='site.json')
     site_config = archivist.new_resource(resourcetype='config',
                                          key=site_config_key,
-                                         acl='public-read',
                                          contenttype='application/json',
                                          data=archivist.siteconfig
                                          )
-    archivist.save(site_config)
+    archivist.publish(site_config)
 
     # TODO PUT Schema files
 

@@ -1,250 +1,5 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
-  "Metadata": {
-    "AWS::CloudFormation::Designer": {
-      "78ccf81c-fb89-4e0d-b544-5979b497c424": {
-        "size": {
-          "width": 60,
-          "height": 60
-        },
-        "position": {
-          "x": 170,
-          "y": 10
-        },
-        "z": 1,
-        "embeds": []
-      },
-      "c333f6fe-8a6b-47a0-a2b6-9e1ac72328ce": {
-        "size": {
-          "width": 60,
-          "height": 60
-        },
-        "position": {
-          "x": 100,
-          "y": 160
-        },
-        "z": 1,
-        "embeds": [],
-        "dependson": [
-          "ba401108-3c68-4501-8bf7-9006c6f769fa"
-        ],
-        "isrelatedto": [
-          "ba401108-3c68-4501-8bf7-9006c6f769fa"
-        ]
-      },
-      "14d4a0f1-1828-4129-8054-fd226046384a": {
-        "size": {
-          "width": 60,
-          "height": 60
-        },
-        "position": {
-          "x": 190,
-          "y": 160
-        },
-        "z": 1,
-        "embeds": []
-      },
-      "f0cf35f1-abae-4147-bc03-150a013f2bdf": {
-        "size": {
-          "width": 60,
-          "height": 60
-        },
-        "position": {
-          "x": 290,
-          "y": 160
-        },
-        "z": 1,
-        "embeds": []
-      },
-      "e57cdb1d-8932-44f2-908c-c88ee0bde4cb": {
-        "size": {
-          "width": 60,
-          "height": 60
-        },
-        "position": {
-          "x": 360,
-          "y": 160
-        },
-        "z": 0,
-        "embeds": []
-      },
-      "ced88a21-c1d0-4989-af64-b4295533f816": {
-        "size": {
-          "width": 60,
-          "height": 60
-        },
-        "position": {
-          "x": 470,
-          "y": 170
-        },
-        "z": 0,
-        "embeds": []
-      },
-      "102fd7e8-3406-470b-9221-1a0c36637b3a": {
-        "size": {
-          "width": 60,
-          "height": 60
-        },
-        "position": {
-          "x": 540,
-          "y": 170
-        },
-        "z": 0,
-        "embeds": []
-      },
-      "ba401108-3c68-4501-8bf7-9006c6f769fa": {
-        "size": {
-          "width": 60,
-          "height": 60
-        },
-        "position": {
-          "x": 40,
-          "y": 80
-        },
-        "z": 0,
-        "embeds": [],
-        "dependson": [
-          "78ccf81c-fb89-4e0d-b544-5979b497c424"
-        ],
-        "isrelatedto": [
-          "78ccf81c-fb89-4e0d-b544-5979b497c424"
-        ]
-      },
-      "3c0f0afd-42e2-48ec-a123-c2134a2ee022": {
-        "source": {
-          "id": "ba401108-3c68-4501-8bf7-9006c6f769fa"
-        },
-        "target": {
-          "id": "78ccf81c-fb89-4e0d-b544-5979b497c424"
-        },
-        "z": 2
-      },
-      "8540c78a-c55b-489c-9224-0b0152e12079": {
-        "source": {
-          "id": "c333f6fe-8a6b-47a0-a2b6-9e1ac72328ce"
-        },
-        "target": {
-          "id": "ba401108-3c68-4501-8bf7-9006c6f769fa"
-        },
-        "z": 2
-      },
-      "8cd79099-67c0-405e-957c-b73fd0181c13": {
-        "size": {
-          "width": 60,
-          "height": 60
-        },
-        "position": {
-          "x": 330,
-          "y": 60
-        },
-        "z": 0,
-        "embeds": []
-      },
-      "244fd599-596a-4b20-85cb-fec189b3f444": {
-        "size": {
-          "width": 60,
-          "height": 60
-        },
-        "position": {
-          "x": 520,
-          "y": 90
-        },
-        "z": 0,
-        "embeds": []
-      },
-      "4099289f-1de6-4173-9d5d-dfcf5ae226d2": {
-        "size": {
-          "width": 60,
-          "height": 60
-        },
-        "position": {
-          "x": 150,
-          "y": 80
-        },
-        "z": 0,
-        "embeds": [],
-        "isassociatedwith": [
-          "c333f6fe-8a6b-47a0-a2b6-9e1ac72328ce"
-        ],
-        "dependson": [
-          "c333f6fe-8a6b-47a0-a2b6-9e1ac72328ce"
-        ],
-        "isrelatedto": [
-          "c333f6fe-8a6b-47a0-a2b6-9e1ac72328ce"
-        ]
-      },
-      "5472ac31-eb35-4b31-99c2-b5cefce6e863": {
-        "source": {
-          "id": "4099289f-1de6-4173-9d5d-dfcf5ae226d2"
-        },
-        "target": {
-          "id": "c333f6fe-8a6b-47a0-a2b6-9e1ac72328ce"
-        },
-        "z": 2
-      },
-      "65b4bd84-a933-4a25-b6d1-dc16c7a39e1c": {
-        "size": {
-          "width": 60,
-          "height": 60
-        },
-        "position": {
-          "x": -55.700884730964134,
-          "y": 171.19717766082357
-        },
-        "z": 0,
-        "embeds": []
-      },
-      "8c74bce1-cb47-49f6-8bc5-bd6225fb5a17": {
-        "size": {
-          "width": 60,
-          "height": 60
-        },
-        "position": {
-          "x": 30,
-          "y": 230
-        },
-        "z": 0,
-        "embeds": [],
-        "isassociatedwith": [
-          "c333f6fe-8a6b-47a0-a2b6-9e1ac72328ce",
-          "14d4a0f1-1828-4129-8054-fd226046384a",
-          "f0cf35f1-abae-4147-bc03-150a013f2bdf",
-          "e57cdb1d-8932-44f2-908c-c88ee0bde4cb",
-          "ced88a21-c1d0-4989-af64-b4295533f816",
-          "102fd7e8-3406-470b-9221-1a0c36637b3a"
-        ],
-        "dependson": [
-          "65b4bd84-a933-4a25-b6d1-dc16c7a39e1c"
-        ],
-        "isrelatedto": [
-          "c333f6fe-8a6b-47a0-a2b6-9e1ac72328ce",
-          "14d4a0f1-1828-4129-8054-fd226046384a",
-          "f0cf35f1-abae-4147-bc03-150a013f2bdf",
-          "e57cdb1d-8932-44f2-908c-c88ee0bde4cb",
-          "ced88a21-c1d0-4989-af64-b4295533f816",
-          "102fd7e8-3406-470b-9221-1a0c36637b3a"
-        ]
-      },
-      "20f18166-c1a5-4e6c-9048-c000cd02ae6b": {
-        "source": {
-          "id": "8c74bce1-cb47-49f6-8bc5-bd6225fb5a17"
-        },
-        "target": {
-          "id": "65b4bd84-a933-4a25-b6d1-dc16c7a39e1c"
-        },
-        "z": 2
-      },
-      "691181ce-8e05-4f9c-87cd-ef2cc588a20e": {
-        "source": {
-          "id": "c333f6fe-8a6b-47a0-a2b6-9e1ac72328ce"
-        },
-        "target": {
-          "id": "8c74bce1-cb47-49f6-8bc5-bd6225fb5a17"
-        },
-        "z": 3
-      }
-    }
-  },
   "Resources": {
     "WebQuillsScribeRole": {
       "Type": "AWS::IAM::Role",
@@ -336,24 +91,52 @@
     "WebQuillsOnSaveItemPageArticle": {
       "Type": "AWS::SNS::Topic",
       "Properties": {
-        "TopicName": "webquills-on-save-item-page-article"
+        "TopicName": "webquills-on-save-item-page-article",
+        "Subscription": [
+          {
+            "Protocol": "lambda",
+            "Endpoint": {
+              "Fn::GetAtt": [
+                "WebQuillsIndexerItem",
+                "Arn"
+              ]
+            }
+          }
+        ]
       },
       "Metadata": {
         "AWS::CloudFormation::Designer": {
           "id": "f0cf35f1-abae-4147-bc03-150a013f2bdf"
         }
-      }
+      },
+      "DependsOn": [
+        "WebQuillsIndexerItem"
+      ]
     },
     "WebQuillsOnRemoveItemPageArticle": {
       "Type": "AWS::SNS::Topic",
       "Properties": {
-        "TopicName": "webquills-on-remove-item-page-article"
+        "TopicName": "webquills-on-remove-item-page-article",
+        "Subscription": [
+          {
+            "Protocol": "lambda",
+            "Endpoint": {
+              "Fn::GetAtt": [
+                "WebQuillsIndexerItem",
+                "Arn"
+              ]
+            }
+          }
+        ]
       },
       "Metadata": {
         "AWS::CloudFormation::Designer": {
           "id": "e57cdb1d-8932-44f2-908c-c88ee0bde4cb"
         }
-      }
+      },
+      "DependsOn": [
+        "WebQuillsIndexerItem"
+      ]
     },
     "WebQuillsOnSaveArtifact": {
       "Type": "AWS::SNS::Topic",
@@ -523,7 +306,107 @@
         }
       }
     },
-    "WebQuillsPermitSNSInvoke": {
+    "WebQuillsIndexerRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "Path": "/webquills/",
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "WebQuillsScribeRolePolicy",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Action": [
+                    "logs:CreateLogGroup",
+                    "logs:CreateLogStream",
+                    "logs:PutLogEvents"
+                  ],
+                  "Effect": "Allow",
+                  "Resource": "arn:aws:logs:*:*:*"
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "sns:Publish",
+                    "sns:Receive",
+                    "sns:Subscribe"
+                  ],
+                  "Resource": "arn:aws:sns:*:*:webquills-*"
+                },
+                {
+                  "Sid": "webquills-indexer-permit-item-table",
+                  "Effect": "Allow",
+                  "Action": [
+                    "dynamodb:GetItem",
+                    "dynamodb:BatchGetItem",
+                    "dynamodb:Query",
+                    "dynamodb:PutItem",
+                    "dynamodb:UpdateItem",
+                    "dynamodb:DeleteItem",
+                    "dynamodb:BatchWriteItem"
+                  ],
+                  "Resource": [
+                    {
+                      "Ref": "WebQuillsItemByClass"
+                    },
+                    {
+                      "Ref": "WebQuillsArtifactByArchetype"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "Metadata": {
+        "AWS::CloudFormation::Designer": {
+          "id": "7884d365-7602-43d7-95f5-d94d2312f7c0"
+        }
+      }
+    },
+    "WebQuillsIndexerItem": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "FunctionName": "webquills-indexer-item",
+        "Runtime": "python2.7",
+        "Role": {
+          "Fn::GetAtt": [
+            "WebQuillsIndexerRole",
+            "Arn"
+          ]
+        },
+        "Handler": "webquills.update_item_index",
+        "MemorySize": 128,
+        "Timeout": 10,
+        "Code": {
+          "S3Bucket": "dist.webquills.net",
+          "S3Key": "alpha/bluebucket-lambda.zip"
+        }
+      },
+      "Metadata": {
+        "AWS::CloudFormation::Designer": {
+          "id": "e2af8eb3-67d7-4efe-ad76-d30081cc0703"
+        }
+      },
+      "DependsOn": [
+        "WebQuillsIndexerRole"
+      ]
+    },
+    "WebQuillsPermitSNSInvokeScribeSTMTA": {
       "Type": "AWS::Lambda::Permission",
       "Properties": {
         "Action": "lambda:InvokeFunction",
@@ -546,6 +429,321 @@
       "DependsOn": [
         "WebQuillsOnSaveSourceTextMarkdown"
       ]
+    },
+    "WebQuillsPermitSNSInvokeIndexerItem": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Ref": "WebQuillsIndexerItem"
+        },
+        "Principal": "sns.amazonaws.com",
+        "SourceArn": {
+          "Ref": "WebQuillsOnSaveItemPageArticle"
+        }
+      },
+      "Metadata": {
+        "AWS::CloudFormation::Designer": {
+          "id": "8e6ef63a-2aef-414f-8c02-ec2bb101c075"
+        }
+      },
+      "DependsOn": [
+        "WebQuillsOnSaveItemPageArticle"
+      ]
+    },
+    "WebQuillsPermitSNSInvokeIndexerItemRemove": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Ref": "WebQuillsIndexerItem"
+        },
+        "Principal": "sns.amazonaws.com",
+        "SourceArn": {
+          "Ref": "WebQuillsOnRemoveItemPageArticle"
+        }
+      },
+      "Metadata": {
+        "AWS::CloudFormation::Designer": {
+          "id": "a9e23537-083b-4525-bd28-c10cde7762f1"
+        }
+      },
+      "DependsOn": [
+        "WebQuillsOnRemoveItemPageArticle"
+      ]
+    }
+  },
+  "Metadata": {
+    "AWS::CloudFormation::Designer": {
+      "6fc98c1a-4973-4944-b047-7e93d50bea93": {
+        "source": {
+          "id": "f0cf35f1-abae-4147-bc03-150a013f2bdf"
+        },
+        "target": {
+          "id": "e2af8eb3-67d7-4efe-ad76-d30081cc0703"
+        },
+        "z": 12
+      },
+      "f0cf35f1-abae-4147-bc03-150a013f2bdf": {
+        "size": {
+          "width": 60,
+          "height": 60
+        },
+        "position": {
+          "x": -70,
+          "y": 210
+        },
+        "z": 1,
+        "embeds": [],
+        "dependson": [
+          "e2af8eb3-67d7-4efe-ad76-d30081cc0703"
+        ],
+        "isrelatedto": [
+          "e2af8eb3-67d7-4efe-ad76-d30081cc0703"
+        ]
+      },
+      "7884d365-7602-43d7-95f5-d94d2312f7c0": {
+        "size": {
+          "width": 60,
+          "height": 60
+        },
+        "position": {
+          "x": -180,
+          "y": 140
+        },
+        "z": 1,
+        "embeds": [],
+        "isrelatedto": [
+          "8cd79099-67c0-405e-957c-b73fd0181c13",
+          "244fd599-596a-4b20-85cb-fec189b3f444"
+        ]
+      },
+      "e2af8eb3-67d7-4efe-ad76-d30081cc0703": {
+        "size": {
+          "width": 60,
+          "height": 60
+        },
+        "position": {
+          "x": -180,
+          "y": 210
+        },
+        "z": 1,
+        "embeds": [],
+        "dependson": [
+          "7884d365-7602-43d7-95f5-d94d2312f7c0"
+        ],
+        "isrelatedto": [
+          "7884d365-7602-43d7-95f5-d94d2312f7c0"
+        ]
+      },
+      "244fd599-596a-4b20-85cb-fec189b3f444": {
+        "size": {
+          "width": 60,
+          "height": 60
+        },
+        "position": {
+          "x": 160,
+          "y": 140
+        },
+        "z": 1,
+        "embeds": []
+      },
+      "8cd79099-67c0-405e-957c-b73fd0181c13": {
+        "size": {
+          "width": 60,
+          "height": 60
+        },
+        "position": {
+          "x": 50,
+          "y": 140
+        },
+        "z": 1,
+        "embeds": []
+      },
+      "102fd7e8-3406-470b-9221-1a0c36637b3a": {
+        "size": {
+          "width": 60,
+          "height": 60
+        },
+        "position": {
+          "x": 620,
+          "y": 160
+        },
+        "z": 1,
+        "embeds": []
+      },
+      "ced88a21-c1d0-4989-af64-b4295533f816": {
+        "size": {
+          "width": 60,
+          "height": 60
+        },
+        "position": {
+          "x": 340,
+          "y": 210
+        },
+        "z": 1,
+        "embeds": []
+      },
+      "e57cdb1d-8932-44f2-908c-c88ee0bde4cb": {
+        "size": {
+          "width": 60,
+          "height": 60
+        },
+        "position": {
+          "x": -70,
+          "y": 280
+        },
+        "z": 1,
+        "embeds": [],
+        "dependson": [
+          "e2af8eb3-67d7-4efe-ad76-d30081cc0703"
+        ],
+        "isrelatedto": [
+          "e2af8eb3-67d7-4efe-ad76-d30081cc0703"
+        ]
+      },
+      "14d4a0f1-1828-4129-8054-fd226046384a": {
+        "size": {
+          "width": 60,
+          "height": 60
+        },
+        "position": {
+          "x": 620,
+          "y": 230
+        },
+        "z": 1,
+        "embeds": []
+      },
+      "78ccf81c-fb89-4e0d-b544-5979b497c424": {
+        "size": {
+          "width": 60,
+          "height": 60
+        },
+        "position": {
+          "x": -160,
+          "y": 370
+        },
+        "z": 1,
+        "embeds": []
+      },
+      "ba401108-3c68-4501-8bf7-9006c6f769fa": {
+        "size": {
+          "width": 60,
+          "height": 60
+        },
+        "position": {
+          "x": -80,
+          "y": 370
+        },
+        "z": 1,
+        "embeds": [],
+        "dependson": [
+          "78ccf81c-fb89-4e0d-b544-5979b497c424"
+        ],
+        "isrelatedto": [
+          "78ccf81c-fb89-4e0d-b544-5979b497c424"
+        ]
+      },
+      "8e6ef63a-2aef-414f-8c02-ec2bb101c075": {
+        "size": {
+          "width": 60,
+          "height": 60
+        },
+        "position": {
+          "x": -70,
+          "y": 140
+        },
+        "z": 1,
+        "embeds": [],
+        "isassociatedwith": [
+          "ba401108-3c68-4501-8bf7-9006c6f769fa",
+          "e2af8eb3-67d7-4efe-ad76-d30081cc0703"
+        ],
+        "dependson": [
+          "f0cf35f1-abae-4147-bc03-150a013f2bdf"
+        ],
+        "isrelatedto": [
+          "f0cf35f1-abae-4147-bc03-150a013f2bdf"
+        ]
+      },
+      "c333f6fe-8a6b-47a0-a2b6-9e1ac72328ce": {
+        "size": {
+          "width": 60,
+          "height": 60
+        },
+        "position": {
+          "x": -80,
+          "y": 440
+        },
+        "z": 1,
+        "embeds": [],
+        "dependson": [
+          "ba401108-3c68-4501-8bf7-9006c6f769fa"
+        ],
+        "isrelatedto": [
+          "ba401108-3c68-4501-8bf7-9006c6f769fa"
+        ]
+      },
+      "4099289f-1de6-4173-9d5d-dfcf5ae226d2": {
+        "size": {
+          "width": 60,
+          "height": 60
+        },
+        "position": {
+          "x": -160,
+          "y": 440
+        },
+        "z": 1,
+        "embeds": [],
+        "isassociatedwith": [
+          "ba401108-3c68-4501-8bf7-9006c6f769fa"
+        ],
+        "dependson": [
+          "c333f6fe-8a6b-47a0-a2b6-9e1ac72328ce"
+        ],
+        "isrelatedto": [
+          "c333f6fe-8a6b-47a0-a2b6-9e1ac72328ce"
+        ]
+      },
+      "a9e23537-083b-4525-bd28-c10cde7762f1": {
+        "size": {
+          "width": 60,
+          "height": 60
+        },
+        "position": {
+          "x": -180,
+          "y": 280
+        },
+        "z": 0,
+        "embeds": [],
+        "isassociatedwith": [
+          "e2af8eb3-67d7-4efe-ad76-d30081cc0703"
+        ],
+        "dependson": [
+          "e57cdb1d-8932-44f2-908c-c88ee0bde4cb"
+        ],
+        "isrelatedto": [
+          "e57cdb1d-8932-44f2-908c-c88ee0bde4cb"
+        ]
+      },
+      "7a446dd6-d22f-4fa0-8b7b-0968add096c9": {
+        "source": {
+          "id": "a9e23537-083b-4525-bd28-c10cde7762f1"
+        },
+        "target": {
+          "id": "e57cdb1d-8932-44f2-908c-c88ee0bde4cb"
+        },
+        "z": 2
+      },
+      "5da3bbd2-3801-486a-92c3-c2bdd890f25e": {
+        "source": {
+          "id": "e57cdb1d-8932-44f2-908c-c88ee0bde4cb"
+        },
+        "target": {
+          "id": "e2af8eb3-67d7-4efe-ad76-d30081cc0703"
+        },
+        "z": 2
+      }
     }
   }
 }
