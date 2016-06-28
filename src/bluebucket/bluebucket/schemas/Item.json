@@ -77,9 +77,9 @@
             "type": "object",
             "required": [
                 "archetype",
-                "content_type",
+                "contenttype",
                 "guid",
-                "item_type",
+                "itemtype",
                 "published",
                 "rights",
                 "title",
@@ -110,9 +110,9 @@
                 "updated": {"type": "string", "format": "date-time"},
 
                 "archetype": {"$ref": "#/definitions/link"},
-                "content_type": {"type": "string"},
+                "contenttype": {"type": "string"},
                 "guid": {"type": "string", "format": "uri"},
-                "item_type": {"type": "string"},
+                "itemtype": {"type": "string"},
                 "links": {"$ref": "#/definitions/linklist"}
             }
         }
