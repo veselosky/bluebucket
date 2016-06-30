@@ -147,8 +147,11 @@ class S3archivist(object):
             self.siteconfig = inflate_config(self.get(cfg_path).data)
 
     def get(self, filename):
-        return S3resource.from_s3object(self.s3.get_object(Bucket=self.bucket,
+        reso = S3resource.from_s3object(self.s3.get_object(Bucket=self.bucket,
                                                            Key=filename))
+        reso.key = filename
+        reso.bucket = self.bucket
+        return reso
 
     def save(self, resource):
         # To be saved a resource must have: key, contenttype, content

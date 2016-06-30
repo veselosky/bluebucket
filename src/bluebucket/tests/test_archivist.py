@@ -62,22 +62,25 @@ def test_new_resource_with_kwargs():
 
 
 ###########################################################################
-# Archivist get_object
+# Archivist get
 ###########################################################################
 
 # Given a bucket
 # When get() is called with a filename
 # Then archivist calls s3.get_object with correct params
+# And the returned object has its key and bucket attributes set
 # Should we support conditional GET with If-None-Match, If-Modified-Since?
 def test_get_by_key():
     arch = S3archivist(testbucket, s3=mock.Mock(), siteconfig={})
     arch.s3.get_object.return_value = stubs.s3get_response_text_utf8()
-    arch.get('filename.txt')
+    resource = arch.get('filename.txt')
 
     arch.s3.get_object.assert_called_with(
         Key='filename.txt',
         Bucket=testbucket,
     )
+    assert resource.key == 'filename.txt'
+    assert resource.bucket == arch.bucket
 
 
 # Given a bucket
@@ -228,7 +231,7 @@ def test_save_no_filename():
 # Archivist all_archetypes
 ###########################################################################
 
-# Given anrchivist
+# Given archivist
 # When all_archetypes() is called
 # Then it attempts to retrieve all archetypes from s3
 def test_all_archetypes():
