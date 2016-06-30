@@ -364,8 +364,14 @@ def main():
     elif param['init-bucket']:
         # FIXME I am ashamed to hard code this stuff, just trying to get DONE.
         sitemeta = {
-            "title": "WebQuills: Content Management for Effective Web Sites",
             "google_analytics_id": "UA-642116-5",
+            "title": "WebQuills: Content Management for Effective Web Sites",
+            "rights": {
+                "copyright_notice": "Copyright 2016 Vince Veselosky"
+            },
+            "attribution": [
+                {"role": "author", "name": "Vince Veselosky"}
+            ]
         }
         archivist = S3archivist(param['--bucket'], siteconfig=sitemeta)
         init_bucket(archivist, param['--region'], param['--account'])
