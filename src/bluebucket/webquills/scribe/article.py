@@ -18,7 +18,18 @@
 Transforms a JSON archetype to a monograph using a Jinja2 template.
 """
 from __future__ import absolute_import, print_function, unicode_literals
-from bluebucket.util import is_sequence, change_ext
+from bluebucket.util import is_sequence
+from bluebucket.archivist import parse_aws_event, S3archivist
+from jinja2 import Template
+import logging
+
+logger = logging.getLogger(__name__)
+fallback_template = """
+<doctype html><html><head>
+  <title>{{ Item.title }}</title>
+</head><body>{{ Item_Page_Article.body }}
+</body></html>
+"""
 
 
 def get_template(archivist, context):
@@ -28,41 +39,58 @@ def get_template(archivist, context):
     # Most specific to least specific. Does the archetype request a
     # custom template? Note that config values may be a list, or a
     # single string.
-    t = context.get('template', None)
+    t = context.get('template')
     if is_sequence(t):
         templates.extend(t)
     elif t:
         templates.append(t)
 
     # Does the siteconfig specify a default template?
-    t = archivist.siteconfig.get('default_template', None)
+    t = archivist.siteconfig.get('default_template')
     if is_sequence(t):
         templates.extend(t)
     elif t:
         templates.append(t)
 
-    # If no configured default, fall back to conventional default.
-    templates.append('page.html')
+    # If no configured default, fall back to "emergency" default.
+    templates.append(Template(fallback_template))
 
     return archivist.jinja.select_template(templates)
 
 
-def on_save(archivist, asset):
-    if not asset.resourcetype == 'archetype':
+def on_save(archivist, resource):
+    if not resource.resourcetype == 'archetype':
         return []
-    context = asset.data
+    context = resource.data
+    for key in context:
+        if '/' in key:
+            new_key = key.replace('/', '_')
+            context[new_key] = context.pop(key)
     context['_site'] = archivist.siteconfig
     template = get_template(archivist, context)
     content = template.render(context)
-    # FIXME Update this to use new path strategy
-    key = archivist.unprefix(asset.key)
-    monograph = archivist.new_resource(key=change_ext(key, '.html'),
-                                       contenttype='text/html; charset=utf-8',
+    resmeta = {
+        "contenttype": "text/html; charset=utf-8",
+        "resourcetype": "artifact"
+    }
+    key = archivist.pathstrategy.path_for(**dict(resource.data["Item"],
+                                                 **resmeta))
+    monograph = archivist.new_resource(key=key,
                                        content=content,
-                                       resourcetype='artifact')
+                                       **resmeta)
+    archivist.publish(monograph)
     return [monograph]
 
 
-def on_delete(archivist, key):
-    return [archivist.new_resource(key=change_ext(key, '.html'), deleted=True)]
+def item_page_article_to_html(message, context):
+    events = parse_aws_event(message)
+    if not events:
+        logger.warn("No events found in message!\n%s" % message)
+    for event in events:
+        if event.is_save_event:
+            archivist = S3archivist(event.bucket)
+            resource = archivist.get(event.key)
+            on_save(archivist, resource)
+        else:
+            logger.warn("Not a save event!\n%s" % event)
 
