@@ -49,7 +49,6 @@ Title: Spanish Lesson
 """
 
 #: Test document with special cases. Cases are:
-#: - category.name is given as subsctructure field name
 #: - updated has a timezone
 #: - attribution not provided (should fall back to site config)
 doc2 = """itemtype: Item/Page/Article
@@ -88,7 +87,7 @@ def test_to_archetype1():
                             siteconfig=siteconfig)
     rval = mark.to_archetype(archivist, doc1)
     jsonschema.validate(rval, schema)
-    assert rval['Item']['category'][0]['name'] == "test/category"
+    assert rval['Item']['category']['name'] == "test/category"
     assert rval['Item']['attribution'][0]['name'] ==\
         'Vinnie "the Rueben" Veselosky'
 
@@ -100,7 +99,7 @@ def test_to_archetype2():
     rval = mark.to_archetype(archivist, doc2)
     print(json.dumps(rval))
     jsonschema.validate(rval, schema)
-    assert rval['Item']['category'][0]['name'] == "fake/content"
+    assert rval['Item']['category']['name'] == "fake/content"
     assert rval['Item']['attribution'][0]['name'] == "Vince Veselosky"
 
 

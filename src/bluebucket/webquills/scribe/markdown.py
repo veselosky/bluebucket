@@ -72,14 +72,7 @@ def to_archetype(archivist, text):
                 itemmeta["rights"] = {}
             itemmeta["rights"][key[7:]] = metadata[key][0]
         elif key == "category":
-            if "category" not in itemmeta:
-                itemmeta["category"] = []
-            itemmeta["category"].append({"name": metadata[key][0]})
-        elif key.startswith("category."):
-            # FIXME BUG Only supports the first property! Will create dupes. :P
-            if "category" not in itemmeta:
-                itemmeta["category"] = []
-                itemmeta["category"].append({key[9:]: metadata[key][0]})
+            itemmeta["category"] = {"name": metadata[key][0]}
         else:
             # reads everything as list, but most values should be scalar
             itemmeta[key] = value[0] if len(value) == 1 else value

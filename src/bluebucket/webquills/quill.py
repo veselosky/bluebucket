@@ -148,13 +148,13 @@ def new_markdown(item_type, title=None, **kwargs):
 # SAVE (PUT) the asset
 # TODO (After preview is implemented) Check for and delete any preview
 def publish(archivist, text):
-    contentmeta = to_archetype(text)['Item']
+    contentmeta = to_archetype(archivist, text)['Item']
     assetmeta = {
         'contenttype': 'text/markdown; charset=utf-8',
         'resourcetype': 'asset',
         'acl': 'public-read',
     }
-    key = archivist.pathstrategy.path_for(**dict(assetmeta, **contentmeta))
+    key = archivist.pathstrategy.path_for(**dict(contentmeta, **assetmeta))
     asset = archivist.new_resource(
         key=key,
         text=text,

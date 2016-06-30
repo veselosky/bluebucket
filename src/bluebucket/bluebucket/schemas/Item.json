@@ -96,10 +96,7 @@
                         ]
                     }
                 },
-                "category": {
-                    "type": "array",
-                    "items": {"$ref": "#/definitions/category"}
-                },
+                "category": {"$ref": "#/definitions/category"},
                 "created": {"type": "string", "format": "date-time"},
                 "description": {"type": "string"},
                 "published": {"type": "string", "format": "date-time"},
