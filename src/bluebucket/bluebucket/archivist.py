@@ -206,7 +206,9 @@ class S3archivist(object):
         from jinja2 import Environment
         from jinja2_s3loader import S3loader
         template_dir = self.siteconfig.get('template_dir', '_templates')
-        self._jinja = Environment(loader=S3loader(self.bucket, template_dir))
+        self._jinja = Environment(loader=S3loader(self.bucket,
+                                                  template_dir,
+                                                  s3=self.s3))
         return self._jinja
 
     def all_archetypes(self):
