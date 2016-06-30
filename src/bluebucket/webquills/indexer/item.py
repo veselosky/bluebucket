@@ -124,8 +124,9 @@ def on_save(db, archivist, resource):
     meta['bucket_itemclass'] = archivist.bucket + '|' +\
         '/'.join(class_comps[:3])
     meta['updated_guid'] = '|'.join([meta['updated'], meta['guid']])
-    meta['category_updated_guid'] = '|'.join([meta['category'], meta['updated'],
-                                             meta['guid']])
+    meta['category_updated_guid'] = '|'.join([meta['category']['name'],
+                                              meta['updated'],
+                                              meta['guid']])
     meta['s3key'] = resource.key
 
     # Save to table

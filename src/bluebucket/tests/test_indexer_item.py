@@ -32,7 +32,7 @@ def test_indexer_on_save():
             "itemtype": "Item/Page/Article/Blogpost",
             "updated": datetime.now().isoformat(),
             "guid": "test-guid",
-            "category": "test/category"
+            "category": {"name": "test/category"}
         }
     }
 
