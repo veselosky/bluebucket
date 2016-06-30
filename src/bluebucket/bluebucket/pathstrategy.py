@@ -52,16 +52,17 @@ class DefaultPathStrategy(object):
             # Archetypes do not allow any freedom in naming, they are always
             # itemtype and guid
             guid = meta['guid']  # required in this case
-
-            # FIXME Ensure each component is capitalized.
             itemtype = string.capwords(meta['itemtype'], '/')
 
             return path.join(self.archetype_prefix, itemtype, guid + '.json')
 
         elif resourcetype == 'artifact':
-            # FIXME Construct Artifact paths from metadata for SEO
-            key = meta['key']
-            return self.unprefix(key)
+            if contenttype.startswith('text/html'):
+                key = path.join(meta['category']['name'],
+                                meta['slug']) + '.html'
+                return key
+            else:
+                return self.unprefix(meta['key'])
 
         elif resourcetype == 'config':
             # config files live in the archetypes directory

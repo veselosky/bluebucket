@@ -49,6 +49,22 @@ def test_markdown_source_no_guid():
         p.path_for(**meta)
 
 
+# Given meta representing an archetype of an Article
+# When I call path_for()
+# Then it returns a path with category + slug.html
+def test_article_archetype():
+    p = DefaultPathStrategy()
+    meta = {
+        "resourcetype": "artifact",
+        "itemtype": "Item/Page/Article",
+        "contenttype": "text/html; charset=utf-8",
+        "category": {"name": "test/category"},
+        "slug": "article-slug",
+    }
+    answer = p.path_for(**meta)
+    assert answer == 'test/category/article-slug.html'
+
+
 def test_archetype():
     p = DefaultPathStrategy()
 
