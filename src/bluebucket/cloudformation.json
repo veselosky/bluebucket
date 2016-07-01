@@ -101,6 +101,15 @@
                 "Arn"
               ]
             }
+          },
+          {
+            "Protocol": "lambda",
+            "Endpoint": {
+              "Fn::GetAtt": [
+                "WebQuillsScribeItemPageArticleToHTML",
+                "Arn"
+              ]
+            }
           }
         ]
       },
@@ -404,10 +413,7 @@
       "Properties": {
         "Action": "lambda:InvokeFunction",
         "FunctionName": {
-          "Fn::GetAtt": [
-            "WebQuillsScribeSourceTextMarkdownToArchetype",
-            "Arn"
-          ]
+          "Ref": "WebQuillsScribeSourceTextMarkdownToArchetype"
         },
         "Principal": "sns.amazonaws.com",
         "SourceArn": {
@@ -420,7 +426,8 @@
         }
       },
       "DependsOn": [
-        "WebQuillsOnSaveSourceTextMarkdown"
+        "WebQuillsOnSaveSourceTextMarkdown",
+        "WebQuillsScribeSourceTextMarkdownToArchetype"
       ]
     },
     "WebQuillsPermitSNSInvokeIndexerItem": {
@@ -464,6 +471,55 @@
       "DependsOn": [
         "WebQuillsOnRemoveItemPageArticle"
       ]
+    },
+    "WebQuillsPermitSNSInvokeScribeIPAtoHTML": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Ref": "WebQuillsScribeItemPageArticleToHTML"
+        },
+        "Principal": "sns.amazonaws.com",
+        "SourceArn": {
+          "Ref": "WebQuillsOnSaveItemPageArticle"
+        }
+      },
+      "Metadata": {
+        "AWS::CloudFormation::Designer": {
+          "id": "1ad2dc30-b16b-4442-867d-1882168bc3a1"
+        }
+      },
+      "DependsOn": [
+        "WebQuillsScribeItemPageArticleToHTML"
+      ]
+    },
+    "WebQuillsScribeItemPageArticleToHTML": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "FunctionName": "webquills-scribe-item-page-article-to-html",
+        "Runtime": "python2.7",
+        "Role": {
+          "Fn::GetAtt": [
+            "WebQuillsScribeRole",
+            "Arn"
+          ]
+        },
+        "Handler": "webquills.item_page_article_to_html",
+        "MemorySize": 128,
+        "Timeout": 10,
+        "Code": {
+          "S3Bucket": "dist.webquills.net",
+          "S3Key": "alpha/bluebucket-lambda.zip"
+        }
+      },
+      "Metadata": {
+        "AWS::CloudFormation::Designer": {
+          "id": "ba5afd71-48bd-44b1-b85e-d973f158cfd4"
+        }
+      },
+      "DependsOn": [
+        "WebQuillsScribeRole"
+      ]
     }
   },
   "Metadata": {
@@ -492,7 +548,8 @@
           "e2af8eb3-67d7-4efe-ad76-d30081cc0703"
         ],
         "isrelatedto": [
-          "e2af8eb3-67d7-4efe-ad76-d30081cc0703"
+          "e2af8eb3-67d7-4efe-ad76-d30081cc0703",
+          "ba5afd71-48bd-44b1-b85e-d973f158cfd4"
         ]
       },
       "7884d365-7602-43d7-95f5-d94d2312f7c0": {
@@ -535,7 +592,7 @@
           "height": 60
         },
         "position": {
-          "x": 160,
+          "x": 330,
           "y": 140
         },
         "z": 1,
@@ -547,7 +604,7 @@
           "height": 60
         },
         "position": {
-          "x": 50,
+          "x": 250,
           "y": 140
         },
         "z": 1,
@@ -571,11 +628,14 @@
           "height": 60
         },
         "position": {
-          "x": 340,
-          "y": 210
+          "x": 290,
+          "y": 280
         },
         "z": 1,
-        "embeds": []
+        "embeds": [],
+        "isrelatedto": [
+          "ba5afd71-48bd-44b1-b85e-d973f158cfd4"
+        ]
       },
       "e57cdb1d-8932-44f2-908c-c88ee0bde4cb": {
         "size": {
@@ -584,7 +644,7 @@
         },
         "position": {
           "x": -70,
-          "y": 280
+          "y": 290
         },
         "z": 1,
         "embeds": [],
@@ -625,7 +685,7 @@
           "height": 60
         },
         "position": {
-          "x": -80,
+          "x": -310,
           "y": 370
         },
         "z": 1,
@@ -665,8 +725,8 @@
           "height": 60
         },
         "position": {
-          "x": -80,
-          "y": 440
+          "x": -190,
+          "y": 470
         },
         "z": 1,
         "embeds": [],
@@ -683,8 +743,8 @@
           "height": 60
         },
         "position": {
-          "x": -160,
-          "y": 440
+          "x": -310,
+          "y": 470
         },
         "z": 1,
         "embeds": [],
@@ -692,7 +752,8 @@
           "ba401108-3c68-4501-8bf7-9006c6f769fa"
         ],
         "dependson": [
-          "c333f6fe-8a6b-47a0-a2b6-9e1ac72328ce"
+          "c333f6fe-8a6b-47a0-a2b6-9e1ac72328ce",
+          "ba401108-3c68-4501-8bf7-9006c6f769fa"
         ],
         "isrelatedto": [
           "c333f6fe-8a6b-47a0-a2b6-9e1ac72328ce"
@@ -736,6 +797,102 @@
           "id": "e2af8eb3-67d7-4efe-ad76-d30081cc0703"
         },
         "z": 2
+      },
+      "ba5afd71-48bd-44b1-b85e-d973f158cfd4": {
+        "size": {
+          "width": 60,
+          "height": 60
+        },
+        "position": {
+          "x": 70,
+          "y": 290
+        },
+        "z": 0,
+        "embeds": [],
+        "dependson": [
+          "78ccf81c-fb89-4e0d-b544-5979b497c424"
+        ],
+        "isrelatedto": [
+          "78ccf81c-fb89-4e0d-b544-5979b497c424"
+        ]
+      },
+      "1ad2dc30-b16b-4442-867d-1882168bc3a1": {
+        "size": {
+          "width": 60,
+          "height": 60
+        },
+        "position": {
+          "x": 70,
+          "y": 180
+        },
+        "z": 0,
+        "embeds": [],
+        "isassociatedwith": [
+          "ba5afd71-48bd-44b1-b85e-d973f158cfd4"
+        ],
+        "dependson": [
+          "ba5afd71-48bd-44b1-b85e-d973f158cfd4"
+        ],
+        "isrelatedto": [
+          "ced88a21-c1d0-4989-af64-b4295533f816",
+          "f0cf35f1-abae-4147-bc03-150a013f2bdf"
+        ]
+      },
+      "1839c8da-c2de-4a56-b97f-55d969e87341": {
+        "source": {
+          "id": "1ad2dc30-b16b-4442-867d-1882168bc3a1"
+        },
+        "target": {
+          "id": "ced88a21-c1d0-4989-af64-b4295533f816"
+        },
+        "z": 2
+      },
+      "d871b564-e6c6-424c-8409-07b0011d0722": {
+        "source": {
+          "id": "ba5afd71-48bd-44b1-b85e-d973f158cfd4"
+        },
+        "target": {
+          "id": "78ccf81c-fb89-4e0d-b544-5979b497c424"
+        },
+        "z": 3
+      },
+      "598c9867-339c-424b-9c30-73b399ef68e2": {
+        "source": {
+          "id": "1ad2dc30-b16b-4442-867d-1882168bc3a1"
+        },
+        "target": {
+          "id": "ba5afd71-48bd-44b1-b85e-d973f158cfd4"
+        },
+        "z": 11
+      },
+      "9a436f63-2344-4395-9696-9571ea2046b2": {
+        "source": {
+          "id": "ced88a21-c1d0-4989-af64-b4295533f816"
+        },
+        "target": {
+          "id": "ba5afd71-48bd-44b1-b85e-d973f158cfd4"
+        },
+        "z": 11
+      },
+      "73affe5a-c64f-428f-9b01-afd56ecb1ab7": {
+        "source": {
+          "id": "4099289f-1de6-4173-9d5d-dfcf5ae226d2"
+        },
+        "target": {
+          "id": "ba401108-3c68-4501-8bf7-9006c6f769fa"
+        },
+        "z": 12
+      },
+      "d025b749-4459-4239-8146-d7eec367e93c": {
+        "source": {
+          "id": "1ad2dc30-b16b-4442-867d-1882168bc3a1",
+          "selector": "g:nth-child(1) g:nth-child(4) g:nth-child(2) circle:nth-child(1)     ",
+          "port": "AWS::DependencyLink-*"
+        },
+        "target": {
+          "id": "ba5afd71-48bd-44b1-b85e-d973f158cfd4"
+        },
+        "z": 12
       }
     }
   }
