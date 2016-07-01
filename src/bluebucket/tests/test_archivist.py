@@ -227,6 +227,21 @@ def test_save_no_filename():
     assert einfo
 
 
+# Given a resource of type artifact
+# When save() is called on an artifact with no archetype_guid
+# Then archivist raises a ValueError because archetype_guid is required
+def test_save_artifact_no_guid():
+    arch = S3archivist(testbucket, s3=mock.Mock(), siteconfig={})
+    with pytest.raises(ValueError) as einfo:
+        asset = arch.new_resource(content='contents',
+                                  contenttype=contenttype,
+                                  resourcetype='artifact',
+                                  key='artifact_without_guid.txt'
+                                  )
+        arch.save(asset)
+    assert einfo
+
+
 ###########################################################################
 # Archivist all_archetypes
 ###########################################################################

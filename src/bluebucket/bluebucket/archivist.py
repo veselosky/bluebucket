@@ -42,7 +42,6 @@ def inflate_config(config):
 #######################################################################
 class S3resource(object):
     def __init__(self, **kwargs):
-        self.resourcetype = None
         self.acl = None
         self.bucket = None
         self.content = None
@@ -52,7 +51,7 @@ class S3resource(object):
         self.encoding = 'utf-8'
         self.key = None
         self.last_modified = None
-        self.metadata = {}
+        self.metadata = kwargs.pop("metadata", {})
         self.use_compression = True
 
         for key in kwargs:
@@ -65,14 +64,29 @@ class S3resource(object):
         b.contenttype = obj['ContentType']
         # NOTE reflects compressed size if compressed
         b.content_length = obj['ContentLength']
-        b.metadata = obj['Metadata']
-        b.resourcetype = obj['Metadata']['resourcetype']
+        b.metadata = obj['Metadata'] or {}
         if 'ContentEncoding' in obj and obj['ContentEncoding'] == 'gzip':
             b.contentencoding = obj['ContentEncoding']
             b.content = gunzip(obj['Body'].read())
         else:
             b.content = obj['Body'].read()
         return b
+
+    @property
+    def resourcetype(self):
+        return self.metadata.get("resourcetype")
+
+    @resourcetype.setter
+    def resourcetype(self, newval):
+        self.metadata['resourcetype'] = newval
+
+    @property
+    def archetype_guid(self):
+        return self.metadata.get("archetype_guid")
+
+    @archetype_guid.setter
+    def archetype_guid(self, newval):
+        self.metadata['archetype_guid'] = newval
 
     @property
     def text(self):
@@ -171,7 +185,10 @@ class S3archivist(object):
         if resource.content is None:
             raise TypeError("""To save an empty resource, set content to an empty
                             bytestring""")
-        resource.metadata['resourcetype'] = resource.resourcetype
+        if resource.resourcetype == 'artifact' and not resource.archetype_guid:
+            raise ValueError("""Resources of type artifact must contain an
+                             archetype_guid""")
+
         s3obj = resource.as_s3object(self.bucket)
         return self.s3.put_object(**s3obj)
 
@@ -189,15 +206,6 @@ class S3archivist(object):
 
     def new_resource(self, key, **kwargs):
         return S3resource(bucket=self.bucket, key=key, **kwargs)
-
-    # FIXME Remove this method after json.py is updated to use path strategy
-    def unprefix(self, key):
-        "Remove the archetype or index prefix from a key."
-        if key.startswith(self.archetype_prefix):
-            key = key[len(self.archetype_prefix):]
-        elif key.startswith(self.index_prefix):
-            key = key[len(self.index_prefix):]
-        return key
 
     @property
     def jinja(self):
