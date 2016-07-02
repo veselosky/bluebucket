@@ -191,6 +191,10 @@ class S3archivist(object):
 
         s3obj = resource.as_s3object(self.bucket)
         return self.s3.put_object(**s3obj)
+        # TODO On successful put, send SNS message to onSaveArtifact
+        # Since artifacts do not have a fixed path prefix or suffix, we cannot
+        # ask S3 to send notifications automatically, so we send them manually
+        # here.
 
     def publish(self, resource):
         "Same as save, but ensures the resource is publicly readable."
@@ -244,21 +248,87 @@ class S3archivist(object):
 # S3 Events
 #######################################################################
 class S3event(object):
-    def __init__(self, event, **kwargs):
+    def __init__(self, event=None, **kwargs):
+        self.event = event or {"s3": {"object": {}, "bucket": {}}, }
         for key in kwargs:
             setattr(self, key, kwargs[key])
-        self.bucket = event['s3']['bucket']['name']
-        self.etag = event['s3']['object']['eTag']
-        self.key = event['s3']['object']['key']
-        self.name = event['eventName']
-        self.region = event['awsRegion']
-        self.sequencer = event['s3']['object']['sequencer']
-        self.source = event['eventSource']
-        self.time = parse_date(event['eventTime'])
+
+    @property
+    def bucket(self):
+        return self.event['s3']['bucket']['name']
+
+    @bucket.setter
+    def bucket(self, newval):
+        self.event['s3']['bucket']['name'] = newval
+
+    @property
+    def datetime(self):
+        "The event time as a datetime object, rather than a string."
+        return parse_date(self.time)
+
+    @property
+    def etag(self):
+        return self.event['s3']['object']['eTag']
+
+    @etag.setter
+    def etag(self, newval):
+        self.event['s3']['object']['eTag'] = newval
 
     @property
     def is_save_event(self):
         return 'ObjectCreated' in self.name
+
+    @property
+    def key(self):
+        return self.event['s3']['object']['key']
+
+    @key.setter
+    def key(self, newval):
+        self.event['s3']['object']['key'] = newval
+
+    @property
+    def name(self):
+        return self.event['eventName']
+
+    @name.setter
+    def name(self, newval):
+        self.event['eventName'] = newval
+
+    @property
+    def region(self):
+        return self.event['awsRegion']
+
+    @region.setter
+    def region(self, newval):
+        self.event['awsRegion'] = newval
+
+    @property
+    def sequencer(self):
+        return self.event['s3']['object']['sequencer']
+
+    @sequencer.setter
+    def sequencer(self, newval):
+        self.event['s3']['object']['sequencer'] = newval
+
+    @property
+    def source(self):
+        return self.event['eventSource']
+
+    @source.setter
+    def source(self, newval):
+        self.event['eventSource'] = newval
+
+    @property
+    def time(self):
+        return self.event['eventTime']
+
+    @time.setter
+    def time(self, newval):
+        self.event['eventTime'] = newval
+
+    def as_json(self):
+        "Returns a serialized JSON string of the S3 event"
+        return json.dumps(self.event)
 
 
 def parse_aws_event(message, **kwargs):

@@ -434,7 +434,8 @@ def test_s3event_construct():
     assert ev.region == event['awsRegion']
     assert ev.sequencer == event['s3']['object']['sequencer']
     assert ev.source == event['eventSource']
-    assert hasattr(ev.time, 'isoformat')
+    assert ev.time == event['eventTime']
+    assert hasattr(ev.datetime, 'isoformat')
 
 
 def test_parse_aws_event():
