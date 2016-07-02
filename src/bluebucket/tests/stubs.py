@@ -40,7 +40,7 @@ def s3get_response_text_utf8():
         u'ContentType': 'text/plain; charset=utf-8',
         u'ETag': '"ad668d6d0dd7cd4fadd7b3dcf92355aa"',
         u'LastModified': testable_datetime,
-        u'Metadata': {'artifact': 'asset'},
+        u'Metadata': {'resourcetype': 'asset'},
         'ResponseMetadata': {
             'HTTPStatusCode': 200,
             'HostId': 'P7ndnrWmNBDnBwwiwNGodgDxohWTQyM0gP7ikcuKQJ+ZAU4XMcVGXr=',
@@ -58,7 +58,7 @@ def s3get_response_json():
         u'ContentType': 'application/json',
         u'ETag': '"ad668d6d0dd7cd4fadd7b3dcf92355aa"',
         u'LastModified': testable_datetime,
-        u'Metadata': {'artifact': 'asset'},
+        u'Metadata': {'resourcetype': 'asset'},
         'ResponseMetadata': {
             'HTTPStatusCode': 200,
             'HostId': 'P7ndnrWmNBDnBwwiwNGodgDxohWTQyM0gP7ikcuKQJ+ZAU4XMcVGX9=',
@@ -76,7 +76,7 @@ def s3get_response_binary():
         u'ContentType': 'application/octet-stream',
         u'ETag': '"ad668d6d0dd7cd4fadd7b3dcf92355aa"',
         u'LastModified': testable_datetime,
-        u'Metadata': {'artifact': 'asset'},
+        u'Metadata': {'resourcetype': 'asset'},
         'ResponseMetadata': {
             'HTTPStatusCode': 200,
             'HostId': 'P7ndnrWmNBDnBwwiwNGodgDxohWTQyM0gP7ikcuKQJ+ZAU4XMcVGX9=',
@@ -198,6 +198,29 @@ s3eventsource = {
                 "principalId": "EXAMPLE"
             },
             "eventSource": "aws:s3"
+        }
+    ]
+}
+
+sns_event = {
+    "Records": [
+        {
+            "EventSource": "aws:sns",
+            "EventSubscriptionArn": "arn:aws:sns:us-east-1:128119582937:webquills-on-save-source-text-markdown:82fd1d18-992d-4ec9-af3f-d90e5da1339e",
+            "EventVersion": "1.0",
+            "Sns": {
+                "Message": "{\"Records\":[{\"eventVersion\":\"2.0\",\"eventSource\":\"aws:s3\",\"awsRegion\":\"us-east-1\",\"eventTime\":\"2016-06-23T03:02:47.174Z\",\"eventName\":\"ObjectCreated:Put\",\"userIdentity\":{\"principalId\":\"AWS:AIDAJVCTAKX7F6CQKUGIA\"},\"requestParameters\":{\"sourceIPAddress\":\"50.234.95.35\"},\"responseElements\":{\"x-amz-request-id\":\"AC43D5B771346F7E\",\"x-amz-id-2\":\"47ZDk9F7s1O7dZMqRd4XqHld7Bymibmc17FCobxVMaUB2ztbV8RdQOIdy+kF4cp6QBXI7XW2qy8=\"},\"s3\":{\"s3SchemaVersion\":\"1.0\",\"configurationId\":\"webquills-on-save-source-text-markdown\",\"bucket\":{\"name\":\"bluebucket.mindvessel.net\",\"ownerIdentity\":{\"principalId\":\"A2QB6MXE2Q7NFP\"},\"arn\":\"arn:aws:s3:::bluebucket.mindvessel.net\"},\"object\":{\"key\":\"_A/Source/text/markdown/02eb3153-6d45-4c96-8bcb-f7da85e69624.md\",\"size\":285,\"eTag\":\"bad92d984b68414a501e2f82fb7b7aa7\",\"versionId\":\"AIt1zwgyp_wBNEUMDA5nGcbhSHDjHFIb\",\"sequencer\":\"00576B5156F1106F82\"}}}]}",
+                "MessageAttributes": {},
+                "MessageId": "d6f0f15b-166c-51d5-b870-bebe45fbdf16",
+                "Signature": "Sw9wlbPdI33csAYH+m1S52SILzUxH2QIYWieiLRHlR16+QSl1AU9jeC2vvmoYXLy9mhpjM4VV0gz5zpcNqEzS8vrD+DJsSP9A5Px41+yK+KnLeV+vgyuXTrZK4W7JlOO9ZbpMQEvxA2LApFD5pJAGz355QbrfFF3NMStfrhDQW0xCnVv+T2bUtg3U1EpUXjIN4Quk11zeEZq4GyRliDRI64G4Mf5a3EojnHe/J7ng9mk024jZbpgHV2TcM4xe2WFP6GgdF2MUc+cCs8DlvQCfRP42ANiCpGzIkmEoI5OwA4VK0Z6bONe+Rksr/BmQLpsSGH4dUCDlIweQmL82ErUjQ==",
+                "SignatureVersion": "1",
+                "SigningCertUrl": "https://sns.us-east-1.amazonaws.com/SimpleNotificationService-bb750dd426d95ee9390147a5624348ee.pem",
+                "Subject": "Amazon S3 Notification",
+                "Timestamp": "2016-06-23T03:02:47.333Z",
+                "TopicArn": "arn:aws:sns:us-east-1:128119582937:webquills-on-save-source-text-markdown",
+                "Type": "Notification",
+                "UnsubscribeUrl": "https://sns.us-east-1.amazonaws.com/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:us-east-1:128119582937:webquills-on-save-source-text-markdown:82fd1d18-992d-4ec9-af3f-d90e5da1339e"
+            }
         }
     ]
 }

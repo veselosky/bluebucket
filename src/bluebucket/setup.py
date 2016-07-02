@@ -56,7 +56,8 @@ setup(
     author=about['__author__'],
     author_email=about['__author_email__'],
     url=about['__url__'],
-    packages=['bluebucket'],
+    packages=['bluebucket', 'webquills'],
+    package_data={'': ['*.json']},
     include_package_data=True,
     install_requires=requirements,
     license=about['__license__'],
@@ -69,6 +70,11 @@ setup(
         "Programming Language :: Python :: 2",
         'Programming Language :: Python :: 2.7',
     ],
+    entry_points={
+        'console_scripts': [
+            'quill = webquills.quill:main'
+        ]
+    },
     test_suite='tests',
     tests_require=test_requirements
 )

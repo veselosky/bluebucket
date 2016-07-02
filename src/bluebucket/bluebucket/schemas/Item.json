@@ -77,9 +77,9 @@
             "type": "object",
             "required": [
                 "archetype",
-                "content_type",
+                "contenttype",
                 "guid",
-                "item_type",
+                "itemtype",
                 "published",
                 "rights",
                 "title",
@@ -96,10 +96,7 @@
                         ]
                     }
                 },
-                "category": {
-                    "type": "array",
-                    "items": {"$ref": "#/definitions/category"}
-                },
+                "category": {"$ref": "#/definitions/category"},
                 "created": {"type": "string", "format": "date-time"},
                 "description": {"type": "string"},
                 "published": {"type": "string", "format": "date-time"},
@@ -110,9 +107,9 @@
                 "updated": {"type": "string", "format": "date-time"},
 
                 "archetype": {"$ref": "#/definitions/link"},
-                "content_type": {"type": "string"},
+                "contenttype": {"type": "string"},
                 "guid": {"type": "string", "format": "uri"},
-                "item_type": {"type": "string"},
+                "itemtype": {"type": "string"},
                 "links": {"$ref": "#/definitions/linklist"}
             }
         }

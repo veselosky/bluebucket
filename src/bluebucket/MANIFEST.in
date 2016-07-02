@@ -4,6 +4,8 @@ include requirements.txt
 include Makefile
 include tox.ini
 
+recursive-include bluebucket *
+recursive-include webquills *
 recursive-include tests *
 recursive-exclude * __pycache__
 recursive-exclude * *.py[co]

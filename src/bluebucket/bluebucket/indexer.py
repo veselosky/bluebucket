@@ -149,7 +149,7 @@ class Indexer(object):
             self.add_to_index(index_key, asset)
 
     def on_save(self, asset, archivist=None):
-        if not asset.artifact == 'archetype':
+        if not asset.resourcetype == 'archetype':
             return
         try:
             self.load_index(self.index_key)

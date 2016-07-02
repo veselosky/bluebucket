@@ -91,7 +91,7 @@ the picture.
 
 ### Archetypes and Scribes
 
-The most important asset in the Blue Bucket system is the Archetype. The
+The most important file in the Blue Bucket system is the Archetype. The
 Archetype is a JSON-formatted file representing each page, article, photo, or
 other content item on our web site. We use the JSON format because 1) we want to
 store structured data about our content as well as unstructured content itself,

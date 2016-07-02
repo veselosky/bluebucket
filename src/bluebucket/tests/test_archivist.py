@@ -1,6 +1,6 @@
 # vim: set fileencoding=utf-8 :
 #
-#   Copyright 2015 Vince Veselosky and contributors
+#   Copyright 2016 Vince Veselosky and contributors
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -25,7 +25,8 @@ except ImportError:
 import json
 from pytz import timezone
 
-from bluebucket.archivist import S3archivist, S3asset, inflate_config
+from bluebucket.archivist import S3archivist, S3resource, S3event
+from bluebucket.archivist import inflate_config, parse_aws_event
 from bluebucket.util import gzip
 import stubs
 import pytest
@@ -39,44 +40,47 @@ testbucket = 'test-bucket'
 ###########################################################################
 
 # Given an archivist
-# When I call archivist.new_asset(key)
+# When I call archivist.new_resource(key)
 # A new asset is returned
 # and the asset's bucket attribute has the same value as the archivist's
 # and the asset's key attribute is set with the argument
-def test_new_asset_with_key():
+def test_new_resource_with_key():
     arch = S3archivist(testbucket, s3=mock.Mock(), siteconfig={})
-    asset = arch.new_asset('test.key')
+    asset = arch.new_resource('test.key')
     assert asset.bucket == testbucket
     assert asset.key == 'test.key'
 
 
 # Given an archivist
-# When I call archivist.new_asset(key, **kwargs)
+# When I call archivist.new_resource(key, **kwargs)
 # A new asset is returned
 # and the asset's attributes have been set by the kwargs
-def test_new_asset_with_kwargs():
+def test_new_resource_with_kwargs():
     arch = S3archivist(testbucket, s3=mock.Mock(), siteconfig={})
-    asset = arch.new_asset('test.key', deleted=True)
+    asset = arch.new_resource('test.key', deleted=True)
     assert asset.deleted is True
 
 
 ###########################################################################
-# Archivist get_object
+# Archivist get
 ###########################################################################
 
 # Given a bucket
 # When get() is called with a filename
 # Then archivist calls s3.get_object with correct params
+# And the returned object has its key and bucket attributes set
 # Should we support conditional GET with If-None-Match, If-Modified-Since?
 def test_get_by_key():
     arch = S3archivist(testbucket, s3=mock.Mock(), siteconfig={})
     arch.s3.get_object.return_value = stubs.s3get_response_text_utf8()
-    arch.get('filename.txt')
+    resource = arch.get('filename.txt')
 
     arch.s3.get_object.assert_called_with(
         Key='filename.txt',
         Bucket=testbucket,
     )
+    assert resource.key == 'filename.txt'
+    assert resource.bucket == arch.bucket
 
 
 # Given a bucket
@@ -126,17 +130,17 @@ def test_delete_no_filename():
 # Then archivist calls s3.put_object with correct params
 def test_save_success():
     arch = S3archivist(testbucket, s3=mock.Mock(), siteconfig={})
-    asset = arch.new_asset('filename.txt',
-                           content='contents',
-                           contenttype=contenttype,
-                           artifact='source'
-                           )
+    asset = arch.new_resource('filename.txt',
+                              content='contents',
+                              contenttype=contenttype,
+                              resourcetype='asset'
+                              )
     arch.save(asset)
 
     arch.s3.put_object.assert_called_with(
         Key='filename.txt',
         Body=mock.ANY,
-        Metadata={"artifact": "source"},
+        Metadata={"resourcetype": "asset"},
         ContentType=contenttype,
         ContentEncoding='gzip',
         Bucket=testbucket,
@@ -149,18 +153,18 @@ def test_save_success():
 def test_save_with_metadata():
     arch = S3archivist(testbucket, s3=mock.Mock(), siteconfig={})
     meta = {"stuff": "things"}
-    asset = arch.new_asset('filename.txt',
-                           content='contents',
-                           contenttype=contenttype,
-                           artifact='source',
-                           metadata=meta
-                           )
+    asset = arch.new_resource('filename.txt',
+                              content='contents',
+                              contenttype=contenttype,
+                              resourcetype='asset',
+                              metadata=meta
+                              )
     arch.save(asset)
 
     arch.s3.put_object.assert_called_with(
         Key='filename.txt',
         Body=mock.ANY,
-        Metadata={"stuff": "things", "artifact": "source"},
+        Metadata={"stuff": "things", "resourcetype": "asset"},
         ContentType=contenttype,
         ContentEncoding='gzip',
         Bucket=testbucket,
@@ -172,7 +176,7 @@ def test_save_with_metadata():
 # Then archivist calls s3.delete_object with correct params
 def test_save_deleted():
     arch = S3archivist(testbucket, s3=mock.Mock(), siteconfig={})
-    asset = arch.new_asset('filename.txt', deleted=True)
+    asset = arch.new_resource('filename.txt', deleted=True)
     arch.save(asset)
 
     arch.s3.delete_object.assert_called_with(
@@ -186,10 +190,10 @@ def test_save_deleted():
 # Then archivist raises TypeError
 def test_save_no_contenttype():
     arch = S3archivist(testbucket, s3=mock.Mock(), siteconfig={})
-    asset = arch.new_asset('filename.txt',
-                           content='contents',
-                           artifact='source',
-                           )
+    asset = arch.new_resource('filename.txt',
+                              content='contents',
+                              resourcetype='asset',
+                              )
     with pytest.raises(TypeError) as einfo:
         arch.save(asset)
     assert 'contenttype' in str(einfo.value)
@@ -200,10 +204,10 @@ def test_save_no_contenttype():
 # Then archivist raises TypeError
 def test_save_no_content():
     arch = S3archivist(testbucket, s3=mock.Mock(), siteconfig={})
-    asset = arch.new_asset('filename.txt',
-                           contenttype=contenttype,
-                           artifact='source',
-                           )
+    asset = arch.new_resource('filename.txt',
+                              contenttype=contenttype,
+                              resourcetype='asset',
+                              )
     with pytest.raises(TypeError) as einfo:
         arch.save(asset)
     assert 'content' in str(einfo.value)
@@ -215,10 +219,25 @@ def test_save_no_content():
 def test_save_no_filename():
     arch = S3archivist(testbucket, s3=mock.Mock(), siteconfig={})
     with pytest.raises(TypeError) as einfo:
-        asset = arch.new_asset(content='contents',
-                               contenttype=contenttype,
-                               artifact='source',
-                               )
+        asset = arch.new_resource(content='contents',
+                                  contenttype=contenttype,
+                                  resourcetype='asset',
+                                  )
+        arch.save(asset)
+    assert einfo
+
+
+# Given a resource of type artifact
+# When save() is called on an artifact with no archetype_guid
+# Then archivist raises a ValueError because archetype_guid is required
+def test_save_artifact_no_guid():
+    arch = S3archivist(testbucket, s3=mock.Mock(), siteconfig={})
+    with pytest.raises(ValueError) as einfo:
+        asset = arch.new_resource(content='contents',
+                                  contenttype=contenttype,
+                                  resourcetype='artifact',
+                                  key='artifact_without_guid.txt'
+                                  )
         arch.save(asset)
     assert einfo
 
@@ -227,7 +246,7 @@ def test_save_no_filename():
 # Archivist all_archetypes
 ###########################################################################
 
-# Given anrchivist
+# Given archivist
 # When all_archetypes() is called
 # Then it attempts to retrieve all archetypes from s3
 def test_all_archetypes():
@@ -255,24 +274,24 @@ def test_all_archetypes():
 
 def test_s3object_to_asset_binary():
     resp = stubs.s3get_response_binary()
-    bobj = S3asset.from_s3object(resp)
+    bobj = S3resource.from_s3object(resp)
     assert bobj.content_length == resp['ContentLength']
     assert bobj.contenttype == resp['ContentType']
     assert bobj.last_modified == resp['LastModified']
     assert bobj.metadata == resp['Metadata']
-    assert bobj.artifact == resp['Metadata']['artifact']
+    assert bobj.resourcetype == resp['Metadata']['resourcetype']
     assert bobj.content == stubs.binary_content
 
 
 def test_s3object_to_asset_binary_has_no_text():
-    bobj = S3asset.from_s3object(stubs.s3get_response_binary())
+    bobj = S3resource.from_s3object(stubs.s3get_response_binary())
     assert bobj.content == stubs.binary_content
     with pytest.raises(ValueError):
         assert bobj.text == stubs.binary_content
 
 
 def test_s3object_to_asset_binary_has_no_json():
-    bobj = S3asset.from_s3object(stubs.s3get_response_binary())
+    bobj = S3resource.from_s3object(stubs.s3get_response_binary())
     assert bobj.content == stubs.binary_content
     with pytest.raises(ValueError):
         assert bobj.data == stubs.binary_content
@@ -281,7 +300,7 @@ def test_s3object_to_asset_binary_has_no_json():
 # If the content type matches text/*, the text property will contain the decoded
 # unicode text. The content property still contains raw bytes.
 def test_s3object_to_asset_text():
-    bobj = S3asset.from_s3object(stubs.s3get_response_text_utf8())
+    bobj = S3resource.from_s3object(stubs.s3get_response_text_utf8())
     assert bobj.content == stubs.text_content.encode('utf-8')
     assert bobj.text == stubs.text_content
 
@@ -289,30 +308,30 @@ def test_s3object_to_asset_text():
 # If the content type is application/json, the data property should contain the
 # parsed data structure.
 def test_s3object_to_asset_json():
-    bobj = S3asset.from_s3object(stubs.s3get_response_json())
+    bobj = S3resource.from_s3object(stubs.s3get_response_json())
     assert bobj.content == stubs.json_content
     assert bobj.data == json.loads(stubs.json_content)
 
 
 def test_asset_text_mutator():
     arch = S3archivist(testbucket, s3=mock.Mock(), siteconfig={})
-    asset = arch.new_asset(key='testkey', text='¿Dónde esta el baño?',
-                           contenttype='text/plain')
+    asset = arch.new_resource(key='testkey', text='¿Dónde esta el baño?',
+                              contenttype='text/plain')
     assert type(asset.content) == bytes
     assert asset.text == '¿Dónde esta el baño?'
 
 
 def test_asset_data_mutator():
     arch = S3archivist(testbucket, s3=mock.Mock(), siteconfig={})
-    asset = arch.new_asset(key='testkey', data={"this": "that"},
-                           contenttype='application/json')
+    asset = arch.new_resource(key='testkey', data={"this": "that"},
+                              contenttype='application/json')
     assert asset.content == '{"this": "that"}'
     assert asset.data == {"this": "that"}
 
 
 def test_text_asset_compresses():
-    asset = S3asset(bucket=testbucket, text='¿Dónde esta el baño?',
-                    contenttype='text/plain; charset=utf-8')
+    asset = S3resource(bucket=testbucket, text='¿Dónde esta el baño?',
+                       contenttype='text/plain; charset=utf-8')
     result = asset.as_s3object()
     assert result['Body'] == gzip('¿Dónde esta el baño?'.encode('utf-8'))
     assert result['ContentEncoding'] == 'gzip'
@@ -320,33 +339,33 @@ def test_text_asset_compresses():
 
 def test_json_asset_compresses():
     data = json.dumps({"a": '¿Dónde esta el baño?'})
-    asset = S3asset(bucket=testbucket, content=data,
-                    contenttype='application/json')
+    asset = S3resource(bucket=testbucket, content=data,
+                       contenttype='application/json')
     result = asset.as_s3object()
     assert result['Body'] == gzip(data)
     assert result['ContentEncoding'] == 'gzip'
 
 
 def test_rss_compresses():
-    asset = S3asset(bucket=testbucket, text='¿Dónde esta el baño?',
-                    contenttype='application/rss+xml')
+    asset = S3resource(bucket=testbucket, text='¿Dónde esta el baño?',
+                       contenttype='application/rss+xml')
     result = asset.as_s3object()
     assert result['Body'] == gzip('¿Dónde esta el baño?'.encode('utf-8'))
     assert result['ContentEncoding'] == 'gzip'
 
 
 def test_uncompressable_contenttype():
-    asset = S3asset(bucket=testbucket, text='¿Dónde esta el baño?',
-                    contenttype='application/octet-stream')
+    asset = S3resource(bucket=testbucket, text='¿Dónde esta el baño?',
+                       contenttype='application/octet-stream')
     result = asset.as_s3object()
     assert result['Body'] == '¿Dónde esta el baño?'.encode('utf-8')
     assert 'ContentEncoding' not in result
 
 
 def test_compression_disabled():
-    asset = S3asset(bucket=testbucket, text='¿Dónde esta el baño?',
-                    contenttype='text/plain; charset=utf-8',
-                    use_compression=False)
+    asset = S3resource(bucket=testbucket, text='¿Dónde esta el baño?',
+                       contenttype='text/plain; charset=utf-8',
+                       use_compression=False)
     result = asset.as_s3object()
     assert result['Body'] == '¿Dónde esta el baño?'.encode('utf-8')
     assert 'ContentEncoding' not in result
@@ -395,4 +414,42 @@ def test_timezone_from_obj():
     cfg = inflate_config(config)
 
     assert hasattr(cfg['timezone'], 'localize')
+
+
+###########################################################################
+# Test S3event
+###########################################################################
+
+# Given a valid event struct
+# When I construct S3event from it
+# Then the correct properties are set
+def test_s3event_construct():
+    event = stubs.generate_event()['Records'][0]
+    ev = S3event(event)
+
+    assert ev.bucket == event['s3']['bucket']['name']
+    assert ev.etag == event['s3']['object']['eTag']
+    assert ev.key == event['s3']['object']['key']
+    assert ev.name == event['eventName']
+    assert ev.region == event['awsRegion']
+    assert ev.sequencer == event['s3']['object']['sequencer']
+    assert ev.source == event['eventSource']
+    assert ev.time == event['eventTime']
+    assert hasattr(ev.datetime, 'isoformat')
+
+
+def test_parse_aws_event():
+    message = stubs.generate_event()
+    result = parse_aws_event(message)
+
+    assert len(result) == 1
+    assert type(result[0]) == S3event
+
+
+def test_parse_sns_event():
+    message = stubs.sns_event
+    result = parse_aws_event(message)
+
+    assert len(result) == 1
+    assert type(result[0]) == S3event
 

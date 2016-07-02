@@ -14,14 +14,4 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 #
-"""
-This bluebucket module is a library of functions and classes factored out from
-the Blue Bucket Project Lambda function handlers.
-
-For fields expecting a resourcetype, valid resourcetype values are:
-    [None, 'archetype', 'artifact', 'asset', 'config']
-
-"""
 from __future__ import absolute_import, print_function, unicode_literals
-from .__about__ import *  # noqa
-

@@ -116,7 +116,7 @@ archetype (**required** **automatic**)
   manually set. It is not especially useful within the archetype record, but it
   is necessary for index records.
 
-content_type (**required**)
+contenttype (**required**)
 : The Internet MIME type describing the format of the asset, e.g. "text/html".
   This value is needed for all web assets so that browsers know how to display
   them.
@@ -130,7 +130,7 @@ guid (alias: id, identifier; **required** **automatic**)
   move. So we use [URIs, but not necessarily URLs][]. The system will generate a
   UUID for every asset it needs to track.
 
-item\_type (**required**)
+itemtype (**required**)
 : In many circumstances our system will need to know what type an item
   is. This can be used to look up a schema for validation, or to select a 
   layout template for presentation. This is separate from the content\_type (e.g.
