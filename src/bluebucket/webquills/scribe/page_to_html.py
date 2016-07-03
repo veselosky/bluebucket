@@ -22,6 +22,7 @@ from bluebucket.util import is_sequence
 from bluebucket.archivist import parse_aws_event, S3archivist
 from jinja2 import Template
 import logging
+import posixpath as path
 
 logger = logging.getLogger(__name__)
 fallback_template = """
@@ -44,6 +45,15 @@ def get_template(archivist, context):
         templates.extend(t)
     elif t:
         templates.append(t)
+
+    # Next, we'll look for templates specific to the itemtype, crawling up the
+    # hierarchy for fallbacks.
+    if 'itemtype' in context:
+        templates.append(context['itemtype'])
+        (root, _) = path.split(context['itemtype'])
+        while root:
+            templates.append(root)
+            (root, _) = path.split(root)
 
     # Does the siteconfig specify a default template?
     t = archivist.siteconfig.get('default_template')

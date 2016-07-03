@@ -134,6 +134,33 @@ def test_get_template_default_is_list():
     assert template
 
 
+# Given a siteconfig with a list of default_template
+# And an archetype with a single custom template
+# And an archetype containing a valid itemtype
+# When I call get_template
+# Then the templates are ordered most-specific to least specific
+def test_get_template_with_itemtype():
+    archivist = S3archivist(bucket=testbucket,
+                            siteconfig={"default_template": ["t1.j2", "t2.j2"]},
+                            jinja=mock.Mock())
+    template = scribe.get_template(archivist,
+                                   {
+                                       "template": "custom_template.j2",
+                                       "itemtype": "Item/Page/Article"
+                                   })
+    tlist = [
+        "custom_template.j2",
+        "Item/Page/Article",
+        "Item/Page",
+        "Item",
+        "t1.j2",
+        "t2.j2",
+        mock.ANY
+    ]
+    archivist.jinja.select_template.assert_called_with(tlist)
+    assert template
+
+
 #############################################################################
 # Test on_save
 #############################################################################
