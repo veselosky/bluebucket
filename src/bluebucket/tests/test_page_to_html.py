@@ -19,7 +19,7 @@ from __future__ import absolute_import, print_function, unicode_literals
 import mock
 from bluebucket.archivist import S3archivist
 from botocore.exceptions import ClientError
-from webquills.scribe import article as scribe
+from webquills.scribe import page_to_html as scribe
 
 siteconfig = {
     "template_dir": "tests",

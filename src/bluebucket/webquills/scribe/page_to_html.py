@@ -82,7 +82,7 @@ def on_save(archivist, resource):
     return [monograph]
 
 
-def item_page_article_to_html(message, context):
+def item_page_to_html(message, context):
     events = parse_aws_event(message)
     if not events:
         logger.warn("No events found in message!\n%s" % message)
