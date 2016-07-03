@@ -285,6 +285,20 @@ def init_bucket(archivist, region, account):
     }
     permit_bucket_publish(archivist.bucket, topic_remove_article, region)
 
+    topic_save_catalog = arn_pattern % {
+        "region": region,
+        "account": account,
+        "topic": "webquills-on-save-item-page-catalog"
+    }
+    permit_bucket_publish(archivist.bucket, topic_save_catalog, region)
+
+    topic_remove_catalog = arn_pattern % {
+        "region": region,
+        "account": account,
+        "topic": "webquills-on-remove-item-page-catalog"
+    }
+    permit_bucket_publish(archivist.bucket, topic_remove_catalog, region)
+
     s3.put_bucket_notification_configuration(
         Bucket=archivist.bucket,
         NotificationConfiguration={
@@ -332,7 +346,30 @@ def init_bucket(archivist, region, account):
                                              "_A/Item/Page/Article/"}]
                         }
                     }
+                },
+                {
+                    "Id": "webquills-on-save-item-page-catalog",
+                    "TopicArn": topic_save_catalog,
+                    "Events": ["s3:ObjectCreated:*"],
+                    "Filter": {
+                        "Key": {
+                            "FilterRules": [{"Name": "prefix", "Value":
+                                             "_A/Item/Page/Catalog/"}]
+                        }
+                    }
+                },
+                {
+                    "Id": "webquills-on-remove-item-page-catalog",
+                    "TopicArn": topic_remove_catalog,
+                    "Events": ["s3:ObjectRemoved:DeleteMarkerCreated"],
+                    "Filter": {
+                        "Key": {
+                            "FilterRules": [{"Name": "prefix", "Value":
+                                             "_A/Item/Page/Catalog/"}]
+                        }
+                    }
                 }
+
             ]
         }
     )

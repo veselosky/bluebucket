@@ -40,6 +40,16 @@
                     "sns:Subscribe"
                   ],
                   "Resource": "arn:aws:sns:*:*:webquills-*"
+                },
+                {
+                  "Sid": "WebQuillsScribePermitTableRead",
+                  "Effect": "Allow",
+                  "Action": [
+                    "dynamodb:GetItem",
+                    "dynamodb:BatchGetItem",
+                    "dynamodb:Query"
+                  ],
+                  "Resource": "*"
                 }
               ]
             }
