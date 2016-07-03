@@ -51,10 +51,11 @@ Title: Spanish Lesson
 #: Test document with special cases. Cases are:
 #: - updated has a timezone
 #: - attribution not provided (should fall back to site config)
+#: - category give as structured name with dashes
 doc2 = """itemtype: Item/Page/Article
 guid: 02eb3153-6d45-4c96-8bcb-f7da85e69624
 updated: 2016-06-24T07:56:00-0400
-category: fake/content
+category-name: fake/content
 slug: test-article-one
 title: Test article one
 

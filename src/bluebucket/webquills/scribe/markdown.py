@@ -67,12 +67,16 @@ def to_archetype(archivist, text):
                                         metadata[key][0]}]
         elif key == "copyright":
             itemmeta["rights"] = {"copyright_notice": metadata[key][0]}
-        elif key.startswith("rights."):
+        elif key.startswith("rights-"):
             if "rights" not in itemmeta:
                 itemmeta["rights"] = {}
             itemmeta["rights"][key[7:]] = metadata[key][0]
         elif key == "category":
             itemmeta["category"] = {"name": metadata[key][0]}
+        elif key.startswith("category-"):
+            if "category" not in itemmeta:
+                itemmeta["category"] = {}
+            itemmeta["category"][key[9:]] = metadata[key][0]
         else:
             # reads everything as list, but most values should be scalar
             itemmeta[key] = value[0] if len(value) == 1 else value
