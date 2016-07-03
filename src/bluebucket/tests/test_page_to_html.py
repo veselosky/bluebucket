@@ -183,6 +183,7 @@ def test_json_on_save():
     resource = these[0]
     assert resource.contenttype == 'text/html; charset=utf-8'
     assert resource.resourcetype == 'artifact'
+    assert resource.archetype_guid == archetype['Item']['guid']
     assert "<p>test</p>" in resource.text
     assert archivist.publish.called_with(resource)
 

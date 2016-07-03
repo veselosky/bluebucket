@@ -116,7 +116,7 @@
             "Protocol": "lambda",
             "Endpoint": {
               "Fn::GetAtt": [
-                "WebQuillsScribeItemPageArticleToHTML",
+                "WebQuillsScribeItemPageToHTML",
                 "Arn"
               ]
             }
@@ -152,6 +152,55 @@
         "AWS::CloudFormation::Designer": {
           "id": "e57cdb1d-8932-44f2-908c-c88ee0bde4cb"
         }
+      },
+      "DependsOn": [
+        "WebQuillsIndexerItem"
+      ]
+    },
+    "WebQuillsOnSaveItemPageCatalog": {
+      "Type": "AWS::SNS::Topic",
+      "Properties": {
+        "TopicName": "webquills-on-save-item-page-catalog",
+        "Subscription": [
+          {
+            "Protocol": "lambda",
+            "Endpoint": {
+              "Fn::GetAtt": [
+                "WebQuillsIndexerItem",
+                "Arn"
+              ]
+            }
+          },
+          {
+            "Protocol": "lambda",
+            "Endpoint": {
+              "Fn::GetAtt": [
+                "WebQuillsScribeItemPageToHTML",
+                "Arn"
+              ]
+            }
+          }
+        ]
+      },
+      "DependsOn": [
+        "WebQuillsIndexerItem"
+      ]
+    },
+    "WebQuillsOnRemoveItemPageCatalog": {
+      "Type": "AWS::SNS::Topic",
+      "Properties": {
+        "TopicName": "webquills-on-remove-item-page-catalog",
+        "Subscription": [
+          {
+            "Protocol": "lambda",
+            "Endpoint": {
+              "Fn::GetAtt": [
+                "WebQuillsIndexerItem",
+                "Arn"
+              ]
+            }
+          }
+        ]
       },
       "DependsOn": [
         "WebQuillsIndexerItem"
@@ -482,12 +531,12 @@
         "WebQuillsOnRemoveItemPageArticle"
       ]
     },
-    "WebQuillsPermitSNSInvokeScribeIPAtoHTML": {
+    "WebQuillsPermitSNSInvokeScribeIPtoHTML": {
       "Type": "AWS::Lambda::Permission",
       "Properties": {
         "Action": "lambda:InvokeFunction",
         "FunctionName": {
-          "Ref": "WebQuillsScribeItemPageArticleToHTML"
+          "Ref": "WebQuillsScribeItemPageToHTML"
         },
         "Principal": "sns.amazonaws.com",
         "SourceArn": {
@@ -500,13 +549,29 @@
         }
       },
       "DependsOn": [
-        "WebQuillsScribeItemPageArticleToHTML"
+        "WebQuillsScribeItemPageToHTML"
       ]
     },
-    "WebQuillsScribeItemPageArticleToHTML": {
+    "WebQuillsPermitSNSInvokeScribeIPtoHTMLCatalog": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Ref": "WebQuillsScribeItemPageToHTML"
+        },
+        "Principal": "sns.amazonaws.com",
+        "SourceArn": {
+          "Ref": "WebQuillsOnSaveItemPageCatalog"
+        }
+      },
+      "DependsOn": [
+        "WebQuillsScribeItemPageToHTML"
+      ]
+    },
+    "WebQuillsScribeItemPageToHTML": {
       "Type": "AWS::Lambda::Function",
       "Properties": {
-        "FunctionName": "webquills-scribe-item-page-article-to-html",
+        "FunctionName": "webquills-scribe-item-page-to-html",
         "Runtime": "python2.7",
         "Role": {
           "Fn::GetAtt": [
@@ -514,7 +579,7 @@
             "Arn"
           ]
         },
-        "Handler": "webquills.item_page_article_to_html",
+        "Handler": "webquills.item_page_to_html",
         "MemorySize": 128,
         "Timeout": 10,
         "Code": {
