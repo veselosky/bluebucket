@@ -67,6 +67,21 @@ def test_article_schema_is_valid():
     jsonschema.validate(testjson, schema)
 
 
+def test_catalog_schema_is_valid():
+    schemafile = pkg_resources.resource_filename('bluebucket.schemas',
+                                                 'metaschema.json')
+    with open(schemafile, encoding="utf-8") as f:
+        schema = json.load(f)
+
+    testfile = pkg_resources.resource_filename('bluebucket.schemas',
+                                               'Catalog.json')
+    with open(testfile, encoding='utf-8') as f:
+        testjson = json.load(f)
+
+    # raises ValidationError if not valid
+    jsonschema.validate(testjson, schema)
+
+
 def test_event_s3_schema_is_valid():
     schemafile = pkg_resources.resource_filename('bluebucket.schemas',
                                                  'metaschema.json')
