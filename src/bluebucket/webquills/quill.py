@@ -34,7 +34,7 @@ from datetime import datetime
 from docopt import docopt
 from io import open
 from os import path
-from slugify import slugify
+from bluebucket.util import slugify
 from webquills.scribe.markdown import to_archetype
 
 import boto3
@@ -47,7 +47,6 @@ import uuid
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-stopwords = ['a', 'an', 'the']
 item_types = {
     'article': 'Item/Page/Article'
 }
@@ -126,7 +125,7 @@ def new_markdown(item_type, title=None, **kwargs):
         '''
 
     if title:
-        metas.append('slug: %s' % slugify(title, stopwords=stopwords))
+        metas.append('slug: %s' % slugify(title))
         metas.append('title: %s' % title)
     else:
         metas.append('slug:')
