@@ -76,8 +76,10 @@ slug: index
 title: Blog Home Page
 query-TableName: webquills-item-by-class
 query-IndexName: updated-guid-index
+query-Limit: 15
 query-KeyConditionExpression: bucket_itemclass = :p
-query-expressionAttributeValues: {":p": {"S": "%s"}}
+query-ExpressionAttributeValues: {":p": {"S": "%s"}}
+query-ScanIndexForward: false
 query-Select: ALL_ATTRIBUTES
 """ % index_val
 

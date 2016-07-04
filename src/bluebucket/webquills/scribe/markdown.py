@@ -59,6 +59,8 @@ def fixup_query(query):
         "expressionattributenames",
         "expressionattributevalues"
     ]
+    integers = ['limit']
+    booleans = ['consistentread', 'scanindexforward']
     correct = {
         "tablename": "TableName",
         "consistentread": "ConsistentRead",
@@ -78,6 +80,10 @@ def fixup_query(query):
     for key in query:
         if key in structured_vals:
             new_query[correct[key]] = json.loads(query[key])
+        elif key in integers:
+            new_query[correct[key]] = int(query[key])
+        elif key in booleans:
+            new_query[correct[key]] = query[key].lower().strip() == 'true'
         else:
             new_query[correct[key]] = query[key]
 
