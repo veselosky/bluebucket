@@ -75,10 +75,6 @@ def on_save(archivist, resource):
 
     # Construct a template context
     context = resource.data
-    for key in context:
-        if '/' in key:
-            new_key = key.replace('/', '_')
-            context[new_key] = context.pop(key)
     context['_site'] = archivist.siteconfig
     if 'Item_Page_Catalog' in context:
         if "query" in context['Item_Page_Catalog']:

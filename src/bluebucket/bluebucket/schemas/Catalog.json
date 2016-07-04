@@ -33,7 +33,7 @@
                 }
             }
         },
-        "Item-Page-Catalog": {
+        "Item_Page_Catalog": {
             "type": "object",
             "properties": {
                 "body": {"$ref": "#definitions/body"},
@@ -42,10 +42,8 @@
         }
     },
     "type": "object",
-    "required": ["Item", "Item-Page-Catalog"],
+    "required": ["Item", "Item_Page_Catalog"],
     "properties": {
-        "Item": {"$ref": "Item.json#/definitions/Item" },
-        "Item-Page": {"$ref": "Page.json#/definitions/Item-Page" },
-        "Item-Page-Catalog": {"$ref": "#/definitions/Item-Page-Catalog"}
+        "Item_Page_Catalog": {"$ref": "#/definitions/Item_Page_Catalog"}
     }
 }

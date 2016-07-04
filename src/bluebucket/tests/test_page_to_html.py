@@ -36,7 +36,7 @@ archetype = {
         "category": {"name": "test/category"},
         "slug": "page-title",
     },
-    "Item/Page/Article": {
+    "Item_Page_Article": {
         "body": "<p>test</p>",
     }
 }

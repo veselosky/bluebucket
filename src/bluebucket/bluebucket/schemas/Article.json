@@ -3,7 +3,7 @@
     "definitions": {
         "body": {"type": "string"},
         "headline": {"type": "string"},
-        "Item-Page-Article": {
+        "Item_Page_Article": {
             "type": "object",
             "properties": {
                 "body": {"$ref": "#definitions/body"},
@@ -12,10 +12,10 @@
         }
     },
     "type": "object",
-    "required": ["Item", "Item-Page-Article"],
+    "required": ["Item", "Item_Page_Article"],
     "properties": {
         "Item": {"$ref": "Item.json#/definitions/Item" },
-        "Item-Page": {"$ref": "Page.json#/definitions/Item-Page" },
-        "Item-Page-Article": {"$ref": "#/definitions/Item-Page-Article"}
+        "Item_Page": {"$ref": "Page.json#/definitions/Item_Page" },
+        "Item_Page_Article": {"$ref": "#/definitions/Item_Page_Article"}
     }
 }
