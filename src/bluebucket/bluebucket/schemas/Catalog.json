@@ -37,7 +37,8 @@
             "type": "object",
             "properties": {
                 "body": {"$ref": "#definitions/body"},
-                "headline": {"$ref": "#definitions/headline"}
+                "headline": {"$ref": "#definitions/headline"},
+                "query": {"$ref": "#definitions/query"}
             }
         }
     },
