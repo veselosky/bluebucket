@@ -11,11 +11,11 @@
     <main class="block">
         <article class="h-entry">
             <div class="e-content">
-                {{ _content | safe }}
+                {{ Item_Page_Article.body | safe }}
             </div>
             <footer class="article-meta">
                 <p class="p-meta">
-                    By <span class="p-author">{{ author or _site.author }}</span> on <time class="dt-published">{{ date[:10] }}</time>
+                    By <span class="p-author">{{ author or _site.author }}</span> on <time class="dt-published">{{ Item.published[:10] }}</time>
                 </p>
             </footer>
         </article>

@@ -7,8 +7,19 @@
         <link rel="apple-touch-icon" href="apple-touch-icon.png">
 
     {% block docmeta %}
-        <title>{{ title }}{% if title and _site.title %} | {% endif %}{{ _site.title }}</title>
-        <meta name="description" content="{{ description }}">
+        <title>{{ Item.title }}</title>
+        <meta name="description" content="{{ Item.description }}">
+        <meta property="og:title" content="{{ Item.title }}">
+        <meta property="og:type" content="article">{# TODO Lookup table based on itemtype #}
+        <meta property="og:description" content="{{ Item.description }}">
+        {% if Item.thumbnail %}
+        <meta property="og:image" content="{{ Item.thumbnail.href }}">
+        {% endif %}{# TODO fallback image based on category or type if none provided.
+                      Maybe have some fun with it, use placekitten? #}
+        {% if _site.twitter %}
+        <meta name="twitter:card" content="{{ Item.twittercard or "summary" }}">
+        <meta name="twitter:site" content="{{ _site.twitter }}">
+        {% endif %}
     {% endblock docmeta %}
         
     {% block stylesheets %}
@@ -26,6 +37,7 @@
             <!--[if lt IE 8]>
             <p class="browserupgrade">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
             <![endif]-->
+            {{ Item_Page_Article.body or Item_Page.text }}
     {% endblock wholebody %}
         
     {% block footscripts %}
