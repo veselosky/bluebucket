@@ -27,11 +27,15 @@ from __future__ import absolute_import, print_function
 
 from dateutil.parser import parse as parse_date
 import logging
+import json
 import markdown
 from markdown.extensions.toc import TocExtension
 import pytz
+import string
 
 from bluebucket.archivist import parse_aws_event, S3archivist
+from bluebucket.util import slugify
+
 
 logger = logging.getLogger(__name__)
 extensions = [
@@ -46,6 +50,46 @@ md = markdown.Markdown(extensions=extensions, lazy_ol=False,
                        output_format='html5')
 
 
+# markdown normalizes all meta keys to lower case, but keys for AWS are
+# case-sensitive. Since we want to pass this query structure direct to AWS, we
+# need to correct the case of the keys.
+def fixup_query(query):
+    structured_vals = [
+        "exclusivestartkey",
+        "expressionattributenames",
+        "expressionattributevalues"
+    ]
+    integers = ['limit']
+    booleans = ['consistentread', 'scanindexforward']
+    correct = {
+        "tablename": "TableName",
+        "consistentread": "ConsistentRead",
+        "exclusivestartkey": "ExclusiveStartKey",
+        "expressionattributenames": "ExpressionAttributeNames",
+        "expressionattributevalues": "ExpressionAttributeValues",
+        "filterexpression": "FilterExpression",
+        "indexname": "IndexName",
+        "keyconditionexpression": "KeyConditionExpression",
+        "limit": "Limit",
+        "projectionexpression": "ProjectionExpression",
+        "returnconsumedcapacity": "ReturnConsumedCapacity",
+        "scanindexforward": "ScanIndexForward",
+        "select": "Select"
+    }
+    new_query = {}
+    for key in query:
+        if key in structured_vals:
+            new_query[correct[key]] = json.loads(query[key])
+        elif key in integers:
+            new_query[correct[key]] = int(query[key])
+        elif key in booleans:
+            new_query[correct[key]] = query[key].lower().strip() == 'true'
+        else:
+            new_query[correct[key]] = query[key]
+
+    return new_query
+
+
 def to_archetype(archivist, text):
     "Given text in markdown format, returns a dict of metadata and body text."
     timezone = archivist.siteconfig.get('timezone', pytz.utc)
@@ -53,6 +97,9 @@ def to_archetype(archivist, text):
 
     metadata = md.Meta
     itemmeta = {}
+    catalogmeta = {}
+    # Here we implement some special case transforms for data that may need
+    # cleanup or is hard to encode using markdown's simple format.
     for key, value in metadata.items():
         if key in ['created', 'date', 'published', 'updated']:
             # because humans are sloppy, we parse and normalize date values
@@ -61,18 +108,36 @@ def to_archetype(archivist, text):
                 dt = dt.astimezone(timezone)
             else:
                 dt = timezone.localize(dt)
+            if key == 'date':  # Legacy DC.date, convert to specific
+                key == 'published'
             itemmeta[key] = dt.isoformat()
+
+        elif key == 'itemtype':
+            itemmeta['itemtype'] = string.capwords(metadata['itemtype'][0], '/')
+
         elif key == 'author':
             itemmeta["attribution"] = [{"role": "author", "name":
                                         metadata[key][0]}]
-        elif key == "copyright":
+
+        elif key == "copyright":  # Typical usage provides only notice
             itemmeta["rights"] = {"copyright_notice": metadata[key][0]}
-        elif key.startswith("rights."):
+        elif key.startswith("rights-"):
             if "rights" not in itemmeta:
                 itemmeta["rights"] = {}
             itemmeta["rights"][key[7:]] = metadata[key][0]
-        elif key == "category":
+
+        elif key == "category":  # Typical usage provides only name
             itemmeta["category"] = {"name": metadata[key][0]}
+        elif key.startswith("category-"):
+            if "category" not in itemmeta:
+                itemmeta["category"] = {}
+            itemmeta["category"][key[9:]] = metadata[key][0]
+
+        elif key.startswith("query-"):
+            if "query" not in catalogmeta:
+                catalogmeta["query"] = {}
+            catalogmeta["query"][key[6:]] = metadata[key][0]
+
         else:
             # reads everything as list, but most values should be scalar
             itemmeta[key] = value[0] if len(value) == 1 else value
@@ -88,6 +153,8 @@ def to_archetype(archivist, text):
     itemmeta['contenttype'] = "text/html; charset=utf-8"
     if "itemtype" not in itemmeta:
         itemmeta["itemtype"] = "Item/Page/Article"
+    if "slug" not in itemmeta:
+        itemmeta["slug"] = slugify(itemmeta["title"])
     if "published" not in itemmeta:
         itemmeta["published"] = itemmeta["updated"]
     if "updated" not in itemmeta:
@@ -99,7 +166,10 @@ def to_archetype(archivist, text):
     if "attribution" not in itemmeta:
         itemmeta["attribution"] = archivist.siteconfig.get("attribution")
 
-    archetype = {"Item": itemmeta, "Item/Page/Article": {"body": html}}
+    archetype = {"Item": itemmeta, "Item_Page_Article": {"body": html}}
+    if itemmeta['itemtype'].startswith('Item/Page/Catalog'):
+        catalogmeta['query'] = fixup_query(catalogmeta['query'])
+        archetype['Item_Page_Catalog'] = catalogmeta
     return archetype
 
 

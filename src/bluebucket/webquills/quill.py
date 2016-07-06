@@ -34,7 +34,7 @@ from datetime import datetime
 from docopt import docopt
 from io import open
 from os import path
-from slugify import slugify
+from bluebucket.util import slugify
 from webquills.scribe.markdown import to_archetype
 
 import boto3
@@ -47,7 +47,6 @@ import uuid
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-stopwords = ['a', 'an', 'the']
 item_types = {
     'article': 'Item/Page/Article'
 }
@@ -126,7 +125,7 @@ def new_markdown(item_type, title=None, **kwargs):
         '''
 
     if title:
-        metas.append('slug: %s' % slugify(title, stopwords=stopwords))
+        metas.append('slug: %s' % slugify(title))
         metas.append('title: %s' % title)
     else:
         metas.append('slug:')
@@ -285,6 +284,20 @@ def init_bucket(archivist, region, account):
     }
     permit_bucket_publish(archivist.bucket, topic_remove_article, region)
 
+    topic_save_catalog = arn_pattern % {
+        "region": region,
+        "account": account,
+        "topic": "webquills-on-save-item-page-catalog"
+    }
+    permit_bucket_publish(archivist.bucket, topic_save_catalog, region)
+
+    topic_remove_catalog = arn_pattern % {
+        "region": region,
+        "account": account,
+        "topic": "webquills-on-remove-item-page-catalog"
+    }
+    permit_bucket_publish(archivist.bucket, topic_remove_catalog, region)
+
     s3.put_bucket_notification_configuration(
         Bucket=archivist.bucket,
         NotificationConfiguration={
@@ -332,7 +345,30 @@ def init_bucket(archivist, region, account):
                                              "_A/Item/Page/Article/"}]
                         }
                     }
+                },
+                {
+                    "Id": "webquills-on-save-item-page-catalog",
+                    "TopicArn": topic_save_catalog,
+                    "Events": ["s3:ObjectCreated:*"],
+                    "Filter": {
+                        "Key": {
+                            "FilterRules": [{"Name": "prefix", "Value":
+                                             "_A/Item/Page/Catalog/"}]
+                        }
+                    }
+                },
+                {
+                    "Id": "webquills-on-remove-item-page-catalog",
+                    "TopicArn": topic_remove_catalog,
+                    "Events": ["s3:ObjectRemoved:DeleteMarkerCreated"],
+                    "Filter": {
+                        "Key": {
+                            "FilterRules": [{"Name": "prefix", "Value":
+                                             "_A/Item/Page/Catalog/"}]
+                        }
+                    }
                 }
+
             ]
         }
     )

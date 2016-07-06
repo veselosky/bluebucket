@@ -114,6 +114,16 @@ logger = logging.getLogger(__name__)
 item_table = 'webquills-item-by-class'
 
 
+# After some manual poking, it seems passing strings for KeyConditionExpression
+# requires using the client, and not the service resource. Resources seem only
+# to deal well with Key and Attr resources, not strings, and I don't want to
+# parse that much right now. -VV 2016-07-04
+def execute_query(query, db=None):
+    if db is None:
+        db = boto3.client('dynamodb')
+    return db.query(**query)
+
+
 def on_save(db, archivist, resource):
     # Extract the item metadata from the item
     meta = resource.data['Item']
@@ -143,6 +153,7 @@ def on_remove(db, archivist, key):
     )
 
 
+# THIS IS THE LAMBDA HANDLER:
 def update_item_index(message, context):
     "When the archive changes, update the index tables to match."
     events = parse_aws_event(message)

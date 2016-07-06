@@ -20,6 +20,7 @@ from gzip import GzipFile
 from io import BytesIO
 import json
 import posixpath as path
+import slugify as sluglib
 
 
 class SmartJSONEncoder(json.JSONEncoder):
@@ -68,4 +69,13 @@ def is_sequence(arg):
     return (not hasattr(arg, "strip") and
             (hasattr(arg, "__getitem__") or
             hasattr(arg, "__iter__")))
+
+
+# Consistent slugify. Lots of stupid edge cases here but whatever. -VV
+default_stopwords = ['a', 'an', 'and', 'as', 'but', 'for', 'in', 'is', 'of',
+                     'on', 'or', 'than', 'the', 'to', 'with']
+
+
+def slugify(instring, stopwords=default_stopwords):
+    return sluglib.slugify(instring, stopwords=stopwords)
 

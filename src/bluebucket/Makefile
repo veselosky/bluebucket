@@ -45,6 +45,9 @@ coverage:
 	coverage html
 	$(BROWSER) htmlcov/index.html
 
+deploy: lambda
+	aws s3 cp dist/bluebucket-lambda.zip s3://dist.webquills.net/alpha/bluebucket-lambda.zip --acl public-read
+
 dist: clean
 	python setup.py sdist
 	python setup.py bdist_wheel
@@ -64,13 +67,13 @@ dist/bluebucket-lambda.zip:
 
 lambda: dist/bluebucket-lambda.zip
 
-deploy: lambda
-	aws s3 cp dist/bluebucket-lambda.zip s3://dist.webquills.net/alpha/bluebucket-lambda.zip --acl public-read
-
 setup:
 	aws cloudformation create-stack --template-body file://cloudformation.json --stack-name WebQuills --capabilities CAPABILITY_IAM
+
+test: clean
+	py.test
 
 update-lambda: lambda
 	aws lambda update-function-code --function-name webquills-scribe-source-text-markdown-to-archetype --s3-bucket dist.webquills.net --s3-key alpha/bluebucket-lambda.zip --publish
 	aws lambda update-function-code --function-name webquills-indexer-item --s3-bucket dist.webquills.net --s3-key alpha/bluebucket-lambda.zip --publish
-	aws lambda update-function-code --function-name webquills-scribe-item-page-article-to-html --s3-bucket dist.webquills.net --s3-key alpha/bluebucket-lambda.zip --publish
+	aws lambda update-function-code --function-name webquills-scribe-item-page-to-html --s3-bucket dist.webquills.net --s3-key alpha/bluebucket-lambda.zip --publish

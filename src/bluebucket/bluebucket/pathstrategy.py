@@ -16,6 +16,7 @@
 #
 from __future__ import absolute_import, print_function, unicode_literals
 import posixpath as path
+import re
 import string
 
 
@@ -31,6 +32,7 @@ class DefaultPathStrategy(object):
 
     def path_for(self, **meta):
         "Calculate a resource path based on metadata."
+        xml_pattern = r'^application\/(\w+\+)?xml'
         contenttype = meta.get('contenttype')
         resourcetype = meta.get('resourcetype', 'asset')
 
@@ -60,6 +62,10 @@ class DefaultPathStrategy(object):
             if contenttype.startswith('text/html'):
                 key = path.join(meta['category']['name'],
                                 meta['slug']) + '.html'
+                return key
+            elif re.match(xml_pattern, contenttype):
+                key = path.join(meta['category']['name'],
+                                meta['slug']) + '.xml'
                 return key
             else:
                 return self.unprefix(meta['key'])

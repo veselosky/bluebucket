@@ -65,6 +65,38 @@ def test_article_archetype():
     assert answer == 'test/category/article-slug.html'
 
 
+# Given meta representing an archetype of a Catalog
+# When I call path_for()
+# Then it returns a path with category + slug.html
+def test_catalog_archetype():
+    p = DefaultPathStrategy()
+    meta = {
+        "resourcetype": "artifact",
+        "itemtype": "Item/Page/Catalog",
+        "contenttype": "text/html; charset=utf-8",
+        "category": {"name": "test/category"},
+        "slug": "catalog-slug",
+    }
+    answer = p.path_for(**meta)
+    assert answer == 'test/category/catalog-slug.html'
+
+
+# Given meta representing an archetype of a Catalog
+# When I call path_for()
+# Then it returns a path with category + slug.html
+def test_catalog_archetype_as_xml():
+    p = DefaultPathStrategy()
+    meta = {
+        "resourcetype": "artifact",
+        "itemtype": "Item/Page/Catalog",
+        "contenttype": "application/atom+xml",
+        "category": {"name": "test/category"},
+        "slug": "catalog-slug",
+    }
+    answer = p.path_for(**meta)
+    assert answer == 'test/category/catalog-slug.xml'
+
+
 def test_archetype():
     p = DefaultPathStrategy()
 

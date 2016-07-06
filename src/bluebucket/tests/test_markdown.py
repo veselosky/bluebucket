@@ -51,10 +51,11 @@ Title: Spanish Lesson
 #: Test document with special cases. Cases are:
 #: - updated has a timezone
 #: - attribution not provided (should fall back to site config)
+#: - category give as structured name with dashes
 doc2 = """itemtype: Item/Page/Article
 guid: 02eb3153-6d45-4c96-8bcb-f7da85e69624
 updated: 2016-06-24T07:56:00-0400
-category: fake/content
+category-name: fake/content
 slug: test-article-one
 title: Test article one
 
@@ -67,11 +68,30 @@ I wrote this test article as a test, with some text and some metadata. Not much
 metadata, mind you. Just barely enough to test out some things.
 """
 
+index_val = "bluebucket.mindvessel.net|Item/Page/Article"
+doc3 = """itemtype: Item/Page/Catalog
+guid: b3637338-37d8-46ae-a2c9-269dd5c10ebe
+updated: 2016-07-04T09:20:13.169285-04:00
+slug: index
+title: Blog Home Page
+query-TableName: webquills-item-by-class
+query-IndexName: updated-guid-index
+query-Limit: 15
+query-KeyConditionExpression: bucket_itemclass = :p
+query-ExpressionAttributeValues: {":p": {"S": "%s"}}
+query-ScanIndexForward: false
+query-Select: ALL_ATTRIBUTES
+""" % index_val
+
 schemafile = pkg_resources.resource_filename('bluebucket.schemas', 'Item.json')
 with open(schemafile, encoding="utf-8") as f:
-    schema = json.load(f)
+    itemschema = json.load(f)
+schemafile = pkg_resources.resource_filename('bluebucket.schemas',
+                                             'Catalog.json')
+with open(schemafile, encoding="utf-8") as f:
+    catalogschema = json.load(f)
 
-out = b'{"body": "<p>\u00bfD\u00f3nde esta el ba\u00f1o?</p>", "guid": "f57beeec-9958-45bb-911e-df5a95064523", "itemtype": "Item/Page/Article", "published": "2015-11-03T00:00:00Z", "title": "Test Markdown Document"}'  # noqa
+outbody = b'<p>\u00bfD\u00f3nde esta el ba\u00f1o?</p>'
 
 # attribution and rights are fallbacks for items with missing metadata
 siteconfig = {
@@ -86,10 +106,13 @@ def test_to_archetype1():
                             s3=mock.Mock(),
                             siteconfig=siteconfig)
     rval = mark.to_archetype(archivist, doc1)
-    jsonschema.validate(rval, schema)
+    jsonschema.validate(rval, itemschema)
     assert rval['Item']['category']['name'] == "test/category"
     assert rval['Item']['attribution'][0]['name'] ==\
         'Vinnie "the Rueben" Veselosky'
+    assert rval['Item']['itemtype'] == 'Item/Page/Article'
+    assert rval['Item']['published'] == rval['Item']['updated']
+    assert rval['Item']['slug'] == "spanish-lesson"
 
 
 def test_to_archetype2():
@@ -98,9 +121,21 @@ def test_to_archetype2():
                             siteconfig=siteconfig)
     rval = mark.to_archetype(archivist, doc2)
     print(json.dumps(rval))
-    jsonschema.validate(rval, schema)
+    jsonschema.validate(rval, itemschema)
     assert rval['Item']['category']['name'] == "fake/content"
     assert rval['Item']['attribution'][0]['name'] == "Vince Veselosky"
+    assert rval['Item']['itemtype'] == 'Item/Page/Article'
+    assert rval['Item']['published'] == rval['Item']['updated']
+
+
+def test_to_archetype3_catalog():
+    archivist = S3archivist(testbucket,
+                            s3=mock.Mock(),
+                            siteconfig=siteconfig)
+    rval = mark.to_archetype(archivist, doc3)
+    print(json.dumps(rval))
+    jsonschema.validate(rval, itemschema)
+    jsonschema.validate(rval, catalogschema)
 
 
 # Given an asset representing a markdown file

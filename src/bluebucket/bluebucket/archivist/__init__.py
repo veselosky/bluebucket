@@ -15,9 +15,5 @@
 #   limitations under the License.
 #
 from __future__ import absolute_import, print_function, unicode_literals
+from .s3 import *  # noqa
 
-# We import these here because AWS Lambda can only execute functions containing
-# a single dot :P
-from .scribe.markdown import source_text_mardown_to_archetype  # noqa
-from .indexer.item import update_item_index  # noqa
-from .scribe.page_to_html import item_page_to_html  # noqa
