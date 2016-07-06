@@ -20,8 +20,8 @@ from dateutil.parser import parse as parse_date
 import json
 import logging
 import re
-from .pathstrategy import DefaultPathStrategy
-from .util import SmartJSONEncoder, gunzip, gzip
+from bluebucket.pathstrategy import DefaultPathStrategy
+from bluebucket.util import SmartJSONEncoder, gunzip, gzip
 from pytz import timezone
 
 
