@@ -1,5 +1,6 @@
 {% extends "base.html.j2" %}
 {% block wholebody %}
+{% set author = Item.attribution|selectattr("role", "author") or _site.attribution|selectattr("role", "author") %}
 <div class="block-group header">
     <header class="block">
     <nav>
@@ -15,7 +16,7 @@
             </div>
             <footer class="article-meta">
                 <p class="p-meta">
-                    By <span class="p-author">{{ author or _site.author }}</span> on <time class="dt-published">{{ Item.published[:10] }}</time>
+                    By <span class="p-author">{{ author.name }}</span> on <time class="dt-published">{{ Item.published[:10] }}</time>
                 </p>
             </footer>
         </article>
@@ -26,7 +27,7 @@
 </div>
 
 <div class="block-group page-footer">
-    <footer class="block">Copyright ©2015 Vince Veselosky. | <a rel="license" href="http://creativecommons.org/licenses/by-nc-nd/4.0/"><img alt="Creative Commons License" style="border-width:0" src="http://i.creativecommons.org/l/by-nc-nd/4.0/88x31.png" /></a>
+    <footer class="block">{{ Item.rights.copyright_notice|default("Copyright ©2016 Vince Veselosky.") }} | <a rel="license" href="http://creativecommons.org/licenses/by-nc-nd/4.0/"><img alt="Creative Commons License" style="border-width:0" src="http://i.creativecommons.org/l/by-nc-nd/4.0/88x31.png" /></a>
 <br>
 This work is licensed under <a rel="license" href="http://creativecommons.org/licenses/by-nc-nd/4.0/">Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International License</a>
     </footer>
