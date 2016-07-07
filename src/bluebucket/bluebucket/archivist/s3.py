@@ -60,16 +60,22 @@ class S3resource(object):
     @classmethod
     def from_s3object(cls, obj, **kwargs):
         b = cls(**kwargs)
-        b.last_modified = obj['LastModified']  # boto3 gives a datetime
-        b.contenttype = obj['ContentType']
+        b.last_modified = obj.get('LastModified')  # boto3 gives a datetime
+        b.contenttype = obj.get('ContentType')
         # NOTE reflects compressed size if compressed
-        b.content_length = obj['ContentLength']
-        b.metadata = obj['Metadata'] or {}
-        if 'ContentEncoding' in obj and obj['ContentEncoding'] == 'gzip':
+        b.content_length = obj.get('ContentLength')
+        b.metadata = obj.get('Metadata', {})
+        if obj.get('ContentEncoding') == 'gzip':
             b.contentencoding = obj['ContentEncoding']
             b.content = gunzip(obj['Body'].read())
         else:
-            b.content = obj['Body'].read()
+            try:
+                b.content = obj['Body'].read()
+            except AttributeError:
+                # no read() attr probably means not a real boto3 response, just
+                # a json structure resembling it.
+                b.content = obj['Body']
+
         return b
 
     @property
