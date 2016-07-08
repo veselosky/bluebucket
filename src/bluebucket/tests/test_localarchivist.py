@@ -23,11 +23,9 @@ except ImportError:
     import unittest.mock as mock
 
 import json
-from pytz import timezone
 import os.path as path
 
 from bluebucket.archivist.local import localarchivist, localresource
-from bluebucket.archivist import inflate_config
 import stubs
 import pytest
 
@@ -321,30 +319,6 @@ def test_jinja_custom_prefix(testbucket):
                           siteconfig={"template_dir": "tests"})
     jinja = arch.jinja
     assert jinja.loader.searchpath == [path.join(testbucket, "tests")]
-
-
-###########################################################################
-# Test inflate_config
-###########################################################################
-
-# Given a timezone in string format
-# When inflate_config
-# Then the return value has timezone object as returned by pytz
-def test_timezone_from_str():
-    config = {'timezone': 'America/New_York'}
-    cfg = inflate_config(config)
-
-    assert hasattr(cfg['timezone'], 'localize')
-
-
-# Given a timezone in object form
-# When inflate_config
-# Then the return value has timezone object as returned by pytz
-def test_timezone_from_obj():
-    config = {'timezone': timezone('America/New_York')}
-    cfg = inflate_config(config)
-
-    assert hasattr(cfg['timezone'], 'localize')
 
 
 ###########################################################################

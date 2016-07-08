@@ -20,22 +20,12 @@ import json
 import logging
 from bluebucket.pathstrategy import DefaultPathStrategy
 from bluebucket.archivist.s3 import S3resource
-from pytz import timezone
 from io import open
 import os
 import os.path as path
 
 
 logger = logging.getLogger(__name__)
-
-
-def inflate_config(config):
-    """Takes a bare decoded JSON dict and creates Python objects from certain
-    keys"""
-    tz = config.get('timezone', 'America/New_York')
-    config['timezone'] = tz if hasattr(tz, 'utcoffset') else timezone(tz)
-    # Your transformation here
-    return config
 
 
 #######################################################################
@@ -71,7 +61,7 @@ class localarchivist(object):
 
         if self.siteconfig is None:
             cfg_path = self.archetype_prefix + 'site.json'
-            self.siteconfig = inflate_config(self.get(cfg_path).data)
+            self.siteconfig = self.get(cfg_path).data
 
     def _write_resource(self, resource):
         # Special, writes the s3obj in a meta place, then writes the content

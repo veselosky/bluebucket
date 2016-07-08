@@ -22,19 +22,9 @@ import logging
 import re
 from bluebucket.pathstrategy import DefaultPathStrategy
 from bluebucket.util import SmartJSONEncoder, gunzip, gzip
-from pytz import timezone
 
 
 logger = logging.getLogger(__name__)
-
-
-def inflate_config(config):
-    """Takes a bare decoded JSON dict and creates Python objects from certain
-    keys"""
-    tz = config.get('timezone', 'America/New_York')
-    config['timezone'] = tz if hasattr(tz, 'utcoffset') else timezone(tz)
-    # Your transformation here
-    return config
 
 
 #######################################################################
@@ -164,7 +154,7 @@ class S3archivist(object):
 
         if self.siteconfig is None:
             cfg_path = self.archetype_prefix + 'site.json'
-            self.siteconfig = inflate_config(self.get(cfg_path).data)
+            self.siteconfig = self.get(cfg_path).data
 
     def get(self, filename):
         reso = S3resource.from_s3object(self.s3.get_object(Bucket=self.bucket,
