@@ -114,3 +114,5 @@ class Archivist(object):
         "A generator function that will yield every archetype resource."
         raise NotImplementedError
 
+    def init_bucket(self):
+        raise NotImplementedError
