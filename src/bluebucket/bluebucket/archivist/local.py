@@ -18,8 +18,9 @@ from __future__ import absolute_import, print_function, unicode_literals
 import errno
 import json
 import logging
-from bluebucket.pathstrategy import DefaultPathStrategy
+from bluebucket.archivist.base import Archivist
 from bluebucket.archivist.s3 import S3resource
+from bluebucket.pathstrategy import DefaultPathStrategy
 from io import open
 import os
 import os.path as path
@@ -43,7 +44,7 @@ class localresource(S3resource):
 #######################################################################
 # Note that for testing purposes, you can pass both the s3 object and the jinja
 # object to the constructor.
-class localarchivist(object):
+class localarchivist(Archivist):
 
     def __init__(self, bucket, **kwargs):
         self.bucket = bucket

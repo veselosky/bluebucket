@@ -20,6 +20,7 @@ from dateutil.parser import parse as parse_date
 import json
 import logging
 import re
+from bluebucket.archivist.base import Archivist, Resource
 from bluebucket.pathstrategy import DefaultPathStrategy
 from bluebucket.util import SmartJSONEncoder, gunzip, gzip
 
@@ -30,22 +31,11 @@ logger = logging.getLogger(__name__)
 #######################################################################
 # Model a stored S3 object
 #######################################################################
-class S3resource(object):
+class S3resource(Resource):
     def __init__(self, **kwargs):
-        self.acl = None
-        self.bucket = None
-        self.content = None
-        self.contenttype = None
-        self.contentencoding = None
-        self.deleted = False
-        self.encoding = 'utf-8'
-        self.key = None
-        self.last_modified = None
-        self.metadata = kwargs.pop("metadata", {})
-        self.use_compression = True
-
-        for key in kwargs:
-            setattr(self, key, kwargs[key])
+        super(S3resource, self).__init__(**kwargs)
+        if not hasattr(self, 'use_compression'):
+            self.use_compression = True
 
     @classmethod
     def from_s3object(cls, obj, **kwargs):
@@ -67,42 +57,6 @@ class S3resource(object):
                 b.content = obj['Body']
 
         return b
-
-    @property
-    def resourcetype(self):
-        return self.metadata.get("resourcetype")
-
-    @resourcetype.setter
-    def resourcetype(self, newval):
-        self.metadata['resourcetype'] = newval
-
-    @property
-    def archetype_guid(self):
-        return self.metadata.get("archetype_guid")
-
-    @archetype_guid.setter
-    def archetype_guid(self, newval):
-        self.metadata['archetype_guid'] = newval
-
-    @property
-    def text(self):
-        if self.contenttype.startswith('text/'):
-            return self.content.decode(self.encoding)
-        else:
-            raise ValueError("Only text/* MIME types have a text property")
-
-    @text.setter
-    def text(self, newtext):
-        self.content = newtext.encode(self.encoding)
-
-    @property
-    def data(self):
-        return json.loads(self.content.decode(self.encoding))
-
-    @data.setter
-    def data(self, newdata):
-        # dumper only outputs ascii chars, so this should be safe
-        self.content = json.dumps(newdata, cls=SmartJSONEncoder, sort_keys=True)
 
     def as_s3object(self, bucket=None):
         s3obj = dict(
@@ -131,7 +85,7 @@ class S3resource(object):
 #######################################################################
 # Note that for testing purposes, you can pass both the s3 object and the jinja
 # object to the constructor.
-class S3archivist(object):
+class S3archivist(Archivist):
 
     def __init__(self, bucket, **kwargs):
         self.bucket = bucket
