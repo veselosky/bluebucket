@@ -189,3 +189,18 @@ class localarchivist(object):
             for filename in filenames:
                 yield self.get(path.join(dirpath, filename))
 
+    def init_bucket(self):
+        try:
+            os.makedirs(self.bucket)
+        except OSError, e:  # be happy if someone already created the path
+            if e.errno != errno.EEXIST:
+                raise
+        logger.info("Writing site config to bucket: %s" % self.bucket)
+        site_config_key = self.pathstrategy.path_for(resourcetype='config',
+                                                     key='site.json')
+        site_config = self.new_resource(resourcetype='config',
+                                        key=site_config_key,
+                                        contenttype='application/json',
+                                        data=self.siteconfig
+                                        )
+        self.publish(site_config)
