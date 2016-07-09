@@ -89,10 +89,9 @@ class S3archivist(Archivist):
 
     def __init__(self, bucket, **kwargs):
         self.bucket = bucket
-        self.archetype_prefix = '_A/'
         self.s3 = None
         self.siteconfig = None
-        self.pathstrategy = DefaultPathStrategy()
+        self.pathstrategy = None
         self._jinja = None  # See jinja property below
         for key in kwargs:
             if key == 'jinja':
@@ -105,8 +104,11 @@ class S3archivist(Archivist):
         if self.s3 is None:
             self.s3 = boto3.client('s3')
 
+        if self.pathstrategy is None:
+            self.pathstrategy = DefaultPathStrategy()
+
         if self.siteconfig is None:
-            cfg_path = self.archetype_prefix + 'site.json'
+            cfg_path = self.pathstrategy.archetype_prefix + 'site.json'
             self.siteconfig = self.get(cfg_path).data
 
     def get(self, filename):
@@ -180,7 +182,8 @@ class S3archivist(Archivist):
         incomplete = True
         marker = None
         while incomplete:
-            args = dict(Bucket=self.bucket, Prefix=self.archetype_prefix)
+            args = dict(Bucket=self.bucket,
+                        Prefix=self.pathstrategy.archetype_prefix)
             if marker:
                 args['Marker'] = marker
             listing = self.s3.list_objects(**args)

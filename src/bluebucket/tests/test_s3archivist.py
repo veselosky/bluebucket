@@ -256,8 +256,9 @@ def test_all_archetypes():
     for item in arch.all_archetypes():
         pass
     call = mock.call
-    call1 = call(Bucket=arch.bucket, Prefix=arch.archetype_prefix)
-    call2 = call(Bucket=arch.bucket, Marker="1", Prefix=arch.archetype_prefix)
+    call1 = call(Bucket=arch.bucket, Prefix=arch.pathstrategy.archetype_prefix)
+    call2 = call(Bucket=arch.bucket, Marker="1",
+                 Prefix=arch.pathstrategy.archetype_prefix)
     arch.s3.list_objects.assert_has_calls([call1, call2])
 
 

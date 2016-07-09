@@ -48,10 +48,9 @@ class localarchivist(Archivist):
 
     def __init__(self, bucket, **kwargs):
         self.bucket = bucket
-        self.archetype_prefix = '_A/'
         self.meta_prefix = '.meta/'
         self.siteconfig = None
-        self.pathstrategy = DefaultPathStrategy()
+        self.pathstrategy = None
         self._jinja = None  # See jinja property below
         for key in kwargs:
             if key == 'jinja':
@@ -59,8 +58,11 @@ class localarchivist(Archivist):
             else:
                 setattr(self, key, kwargs[key])
 
+        if self.pathstrategy is None:
+            self.pathstrategy = DefaultPathStrategy()
+
         if self.siteconfig is None:
-            cfg_path = self.archetype_prefix + 'site.json'
+            cfg_path = self.pathstrategy.archetype_prefix + 'site.json'
             self.siteconfig = self.get(cfg_path).data
 
     def _write_resource(self, resource):
