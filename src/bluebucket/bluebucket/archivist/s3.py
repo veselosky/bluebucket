@@ -22,7 +22,7 @@ import logging
 import re
 from bluebucket.archivist.base import Archivist, Resource
 from bluebucket.pathstrategy import DefaultPathStrategy
-from bluebucket.util import SmartJSONEncoder, gunzip, gzip
+from bluebucket.util import gunzip, gzip
 
 
 logger = logging.getLogger(__name__)
@@ -90,7 +90,6 @@ class S3archivist(Archivist):
     def __init__(self, bucket, **kwargs):
         self.bucket = bucket
         self.archetype_prefix = '_A/'
-        self.index_prefix = '_I/'
         self.s3 = None
         self.siteconfig = None
         self.pathstrategy = DefaultPathStrategy()

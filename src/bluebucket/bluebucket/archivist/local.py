@@ -49,7 +49,6 @@ class localarchivist(Archivist):
     def __init__(self, bucket, **kwargs):
         self.bucket = bucket
         self.archetype_prefix = '_A/'
-        self.index_prefix = '_I/'
         self.meta_prefix = '.meta/'
         self.siteconfig = None
         self.pathstrategy = DefaultPathStrategy()
