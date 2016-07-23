@@ -20,13 +20,16 @@ WebQuills command line interface.
 Usage:
     quill [options] new ITEMTYPE [TITLE]
     quill [options] publish ITEMFILE
-    quill [options] aws-install
-    quill [options] init-bucket [options]
+    quill -b BUCKET -r REGION -a ACCOUNT -s CFG aws-install
+    quill init-bucket -b BUCKET -r REGION -a ACCOUNT -s CFG
+    quill -b BUCKET -s CFG local-init-bucket
 
 Options:
-    -b BUCKET, --bucket BUCKET  The S3 bucket to use.
+    -b BUCKET, --bucket BUCKET  The bucket name to use.
     -r REGION, --region REGION  The AWS region to operate in.
     -a ACCOUNT, --account ACCOUNT  The AWS account ID.
+    -s CFG, --siteconfig CFG  A JSON file containing site configuration for the
+        bucket
 """
 from __future__ import absolute_import, print_function, unicode_literals
 from bluebucket.archivist import S3archivist
@@ -50,52 +53,6 @@ logger = logging.getLogger(__name__)
 item_types = {
     'article': 'Item/Page/Article'
 }
-webquills_roles = {}
-
-
-# Utility function to get the role details for webquills roles.
-def get_roles():
-    iam = boto3.client('iam')
-    resp = iam.list_roles(PathPrefix='/webquills/')
-    for role in resp['Roles']:
-        if 'Scribe' in role['RoleName']:
-            webquills_roles['scribe'] = role
-
-    return webquills_roles
-
-
-def permit_bucket_publish(bucket, topic_arn, region):
-    # Permit this bucket to publish to this SNS topic.
-    sns = boto3.client('sns', region_name=region)
-    resp = sns.get_topic_attributes(TopicArn=topic_arn)
-    policy = json.loads(resp['Attributes']['Policy'])
-    for statement in policy['Statement']:
-        if 'Sid' not in statement:
-            continue
-        if statement['Sid'] == bucket:
-            logger.info("bucket has permission to publish to topic %s" %
-                        topic_arn)
-            break
-    else:
-        logger.info("Updating policy for bucket access to topic %s" %
-                    topic_arn)
-        policy['Statement'].append({
-            "Sid": bucket,
-            "Effect": "Allow",
-            "Principal": {"AWS": "*"},
-            "Action": "sns:Publish",
-            "Resource": topic_arn,
-            "Condition": {
-                "ArnEquals": {
-                    "aws:SourceArn": "arn:aws:s3:::" + bucket
-                }
-            }
-        })
-        sns.set_topic_attributes(
-            TopicArn=topic_arn,
-            AttributeName="Policy",
-            AttributeValue=json.dumps(policy)
-        )
 
 
 # quill new <itemtype> [<title>]
@@ -176,202 +133,7 @@ def aws_update(region, account):
 
 
 def init_bucket(archivist, region, account):
-    # Create bucket if necessary
-    s3 = boto3.client('s3', region_name=region)
-    try:
-        s3.head_bucket(Bucket=archivist.bucket)
-        logger.info("Bucket already exists, modifying: %s" % archivist.bucket)
-    except Exception as e:
-        if "404" not in str(e):
-            raise
-        s3.create_bucket(
-            Bucket=archivist.bucket,
-            CreateBucketConfiguration={'LocationConstraint': region}
-        )
-        logger.info("Creating bucket: %s" % archivist.bucket)
-    # Bucket should exist now. Paint it Blue!
-    logger.info("Enabling versioning for bucket: %s" % archivist.bucket)
-    s3.put_bucket_versioning(
-        Bucket=archivist.bucket,
-        VersioningConfiguration={
-            'MFADelete': 'Disabled',
-            'Status': 'Enabled'
-        }
-    )
-    # TODO Custom ErrorDocument?
-    logger.info("Enabling website serving for bucket: %s" % archivist.bucket)
-    s3.put_bucket_website(
-        Bucket=archivist.bucket,
-        WebsiteConfiguration={
-            'IndexDocument': {
-                'Suffix': 'index.html'
-            }
-        }
-    )
-    # TODO Should we also enable CORS by default?
-
-    # Add read-write permission on the bucket to the webquills-scribe role.
-    # Since Cloudformation does not allow me to name the role, we'll need to
-    # search for it. NIEE. See get_roles above.
-    iam = boto3.client('iam', region_name=region)
-    policy_doc = {
-        "Statement": [
-            {
-                "Action": [
-                    "s3:*"
-                ],
-                "Effect": "Allow",
-                "Resource": [
-                    "arn:aws:s3:::%s/*" % archivist.bucket
-                ]
-            }
-        ]
-    }
-    logger.info("Granting Scribes permissions on bucket: %s" % archivist.bucket)
-    roles = get_roles()
-    iam.put_role_policy(
-        RoleName=roles['scribe']['RoleName'],
-        PolicyName='webquills-scribe-s3-%s' % archivist.bucket,
-        PolicyDocument=json.dumps(policy_doc)
-    )
-    # PUT site.json
-    logger.info("Writing site config to bucket: %s" % archivist.bucket)
-    site_config_key = archivist.pathstrategy.path_for(resourcetype='config',
-                                                      key='site.json')
-    site_config = archivist.new_resource(resourcetype='config',
-                                         key=site_config_key,
-                                         contenttype='application/json',
-                                         data=archivist.siteconfig
-                                         )
-    archivist.publish(site_config)
-
-    # TODO PUT Schema files
-
-    # Configure Event Sources to send to SNS Topics for this bucket.
-    # For this, I need the ARNs for the topics in question. Sigh. Since topic
-    # ARNs have a consistent naming pattern, I'm hard coding this. But we need a
-    # more generic way to connect these.
-    logger.info("Adding S3 notifications to SNS for: %s" % archivist.bucket)
-    arn_pattern = "arn:aws:sns:%(region)s:%(account)s:%(topic)s"
-
-    # Markdown Source events
-    topic_save_source_markdown = arn_pattern % {
-        "region": region,
-        "account": account,
-        "topic": "webquills-on-save-source-text-markdown"
-    }
-    permit_bucket_publish(archivist.bucket, topic_save_source_markdown, region)
-
-    topic_remove_source_markdown = arn_pattern % {
-        "region": region,
-        "account": account,
-        "topic": "webquills-on-remove-source-text-markdown"
-    }
-    permit_bucket_publish(archivist.bucket, topic_remove_source_markdown,
-                          region)
-
-    topic_save_article = arn_pattern % {
-        "region": region,
-        "account": account,
-        "topic": "webquills-on-save-item-page-article"
-    }
-    permit_bucket_publish(archivist.bucket, topic_save_article, region)
-
-    topic_remove_article = arn_pattern % {
-        "region": region,
-        "account": account,
-        "topic": "webquills-on-remove-item-page-article"
-    }
-    permit_bucket_publish(archivist.bucket, topic_remove_article, region)
-
-    topic_save_catalog = arn_pattern % {
-        "region": region,
-        "account": account,
-        "topic": "webquills-on-save-item-page-catalog"
-    }
-    permit_bucket_publish(archivist.bucket, topic_save_catalog, region)
-
-    topic_remove_catalog = arn_pattern % {
-        "region": region,
-        "account": account,
-        "topic": "webquills-on-remove-item-page-catalog"
-    }
-    permit_bucket_publish(archivist.bucket, topic_remove_catalog, region)
-
-    s3.put_bucket_notification_configuration(
-        Bucket=archivist.bucket,
-        NotificationConfiguration={
-            "TopicConfigurations": [
-                {
-                    "Id": "webquills-on-save-source-text-markdown",
-                    "TopicArn": topic_save_source_markdown,
-                    "Events": ["s3:ObjectCreated:*"],
-                    "Filter": {
-                        "Key": {
-                            "FilterRules": [{"Name": "prefix", "Value":
-                                             "_A/Source/text/markdown/"}]
-                        }
-                    }
-                },
-                {
-                    "Id": "webquills-on-remove-source-text-markdown",
-                    "TopicArn": topic_remove_source_markdown,
-                    "Events": ["s3:ObjectRemoved:DeleteMarkerCreated"],
-                    "Filter": {
-                        "Key": {
-                            "FilterRules": [{"Name": "prefix", "Value":
-                                             "_A/Source/text/markdown/"}]
-                        }
-                    }
-                },
-                {
-                    "Id": "webquills-on-save-item-page-article",
-                    "TopicArn": topic_save_article,
-                    "Events": ["s3:ObjectCreated:*"],
-                    "Filter": {
-                        "Key": {
-                            "FilterRules": [{"Name": "prefix", "Value":
-                                             "_A/Item/Page/Article/"}]
-                        }
-                    }
-                },
-                {
-                    "Id": "webquills-on-remove-item-page-article",
-                    "TopicArn": topic_remove_article,
-                    "Events": ["s3:ObjectRemoved:DeleteMarkerCreated"],
-                    "Filter": {
-                        "Key": {
-                            "FilterRules": [{"Name": "prefix", "Value":
-                                             "_A/Item/Page/Article/"}]
-                        }
-                    }
-                },
-                {
-                    "Id": "webquills-on-save-item-page-catalog",
-                    "TopicArn": topic_save_catalog,
-                    "Events": ["s3:ObjectCreated:*"],
-                    "Filter": {
-                        "Key": {
-                            "FilterRules": [{"Name": "prefix", "Value":
-                                             "_A/Item/Page/Catalog/"}]
-                        }
-                    }
-                },
-                {
-                    "Id": "webquills-on-remove-item-page-catalog",
-                    "TopicArn": topic_remove_catalog,
-                    "Events": ["s3:ObjectRemoved:DeleteMarkerCreated"],
-                    "Filter": {
-                        "Key": {
-                            "FilterRules": [{"Name": "prefix", "Value":
-                                             "_A/Item/Page/Catalog/"}]
-                        }
-                    }
-                }
-
-            ]
-        }
-    )
+    archivist.init_bucket()
 
 
 # MAIN: Dispatch to individual handlers
@@ -383,7 +145,7 @@ def main():
     args.extend(sys.argv[1:])
     logger.debug(repr(args))
     param = docopt(__doc__, argv=args)
-    logger.debug(repr(param))
+    logger.warn(repr(param))
 
     if param['new']:
         print(new_markdown(item_types[param['ITEMTYPE'].lower()],
@@ -411,4 +173,14 @@ def main():
         }
         archivist = S3archivist(param['--bucket'], siteconfig=sitemeta)
         init_bucket(archivist, param['--region'], param['--account'])
+
+    elif param['local-init-bucket']:
+        # FIXME I am ashamed to hard code this stuff, just trying to get DONE.
+        from bluebucket.archivist.local import localarchivist
+        sitemeta = {}
+        if param['--siteconfig']:
+            with open(param['--siteconfig']) as f:
+                sitemeta = json.load(f)
+        archivist = localarchivist(param['--bucket'], siteconfig=sitemeta)
+        archivist.init_bucket()
 

@@ -359,7 +359,7 @@
               {
                 "Ref": "AWS::StackName"
               },
-              "-scribe-source-text-markdown-to-archetype"
+              "-scribe-src-markdown"
             ]
           ]
         },
@@ -755,7 +755,7 @@
               {
                 "Ref": "AWS::StackName"
               },
-              "-scribe-item-page-to-html"
+              "-scribe-page-html"
             ]
           ]
         },
