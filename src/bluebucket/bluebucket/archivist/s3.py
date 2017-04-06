@@ -17,45 +17,27 @@
 from __future__ import absolute_import, print_function, unicode_literals
 import boto3
 from dateutil.parser import parse as parse_date
+from io import open
 import json
 import logging
+import pkg_resources
 import re
+from bluebucket.archivist.base import Archivist, Resource
 from bluebucket.pathstrategy import DefaultPathStrategy
-from bluebucket.util import SmartJSONEncoder, gunzip, gzip
-from pytz import timezone
+from bluebucket.util import gunzip, gzip
 
 
 logger = logging.getLogger(__name__)
 
 
-def inflate_config(config):
-    """Takes a bare decoded JSON dict and creates Python objects from certain
-    keys"""
-    tz = config.get('timezone', 'America/New_York')
-    config['timezone'] = tz if hasattr(tz, 'utcoffset') else timezone(tz)
-    # Your transformation here
-    return config
-
-
 #######################################################################
 # Model a stored S3 object
 #######################################################################
-class S3resource(object):
+class S3resource(Resource):
     def __init__(self, **kwargs):
-        self.acl = None
-        self.bucket = None
-        self.content = None
-        self.contenttype = None
-        self.contentencoding = None
-        self.deleted = False
-        self.encoding = 'utf-8'
-        self.key = None
-        self.last_modified = None
-        self.metadata = kwargs.pop("metadata", {})
-        self.use_compression = True
-
-        for key in kwargs:
-            setattr(self, key, kwargs[key])
+        super(S3resource, self).__init__(**kwargs)
+        if not hasattr(self, 'use_compression'):
+            self.use_compression = True
 
     @classmethod
     def from_s3object(cls, obj, **kwargs):
@@ -77,42 +59,6 @@ class S3resource(object):
                 b.content = obj['Body']
 
         return b
-
-    @property
-    def resourcetype(self):
-        return self.metadata.get("resourcetype")
-
-    @resourcetype.setter
-    def resourcetype(self, newval):
-        self.metadata['resourcetype'] = newval
-
-    @property
-    def archetype_guid(self):
-        return self.metadata.get("archetype_guid")
-
-    @archetype_guid.setter
-    def archetype_guid(self, newval):
-        self.metadata['archetype_guid'] = newval
-
-    @property
-    def text(self):
-        if self.contenttype.startswith('text/'):
-            return self.content.decode(self.encoding)
-        else:
-            raise ValueError("Only text/* MIME types have a text property")
-
-    @text.setter
-    def text(self, newtext):
-        self.content = newtext.encode(self.encoding)
-
-    @property
-    def data(self):
-        return json.loads(self.content.decode(self.encoding))
-
-    @data.setter
-    def data(self, newdata):
-        # dumper only outputs ascii chars, so this should be safe
-        self.content = json.dumps(newdata, cls=SmartJSONEncoder, sort_keys=True)
 
     def as_s3object(self, bucket=None):
         s3obj = dict(
@@ -141,16 +87,17 @@ class S3resource(object):
 #######################################################################
 # Note that for testing purposes, you can pass both the s3 object and the jinja
 # object to the constructor.
-class S3archivist(object):
+class S3archivist(Archivist):
 
     def __init__(self, bucket, **kwargs):
         self.bucket = bucket
-        self.archetype_prefix = '_A/'
-        self.index_prefix = '_I/'
+        self.cloudformation = None  # rarely used, only init_bucket
+        self.iam = None  # rarely used
+        self.pathstrategy = None
         self.s3 = None
         self.siteconfig = None
-        self.pathstrategy = DefaultPathStrategy()
         self._jinja = None  # See jinja property below
+        self._account = None  # See account property
         for key in kwargs:
             if key == 'jinja':
                 setattr(self, '_jinja', kwargs[key])
@@ -161,10 +108,14 @@ class S3archivist(object):
         # expensive) calculations for the defaults
         if self.s3 is None:
             self.s3 = boto3.client('s3')
+        self.region = self.s3.meta.region_name
+
+        if self.pathstrategy is None:
+            self.pathstrategy = DefaultPathStrategy()
 
         if self.siteconfig is None:
-            cfg_path = self.archetype_prefix + 'site.json'
-            self.siteconfig = inflate_config(self.get(cfg_path).data)
+            cfg_path = self.pathstrategy.archetype_prefix + 'site.json'
+            self.siteconfig = self.get(cfg_path).data
 
     def get(self, filename):
         reso = S3resource.from_s3object(self.s3.get_object(Bucket=self.bucket,
@@ -218,6 +169,18 @@ class S3archivist(object):
         return S3resource(bucket=self.bucket, key=key, **kwargs)
 
     @property
+    def account(self):
+        if not self._account:
+            # There's no direct way to discover the account id, but it is part of
+            # the ARN of the user, so we get the current user and parse it out.
+            iam = self.iam or boto3.client('iam')
+            resp = iam.get_user()
+            # 'arn:aws:iam::128119582937:user/vince'
+            m = re.match(r'arn:aws:iam::(\d+):.*', resp["User"]["Arn"])
+            self._account =  m.group(1)
+        return self._account
+
+    @property
     def jinja(self):
         if self._jinja:
             return self._jinja
@@ -237,7 +200,8 @@ class S3archivist(object):
         incomplete = True
         marker = None
         while incomplete:
-            args = dict(Bucket=self.bucket, Prefix=self.archetype_prefix)
+            args = dict(Bucket=self.bucket,
+                        Prefix=self.pathstrategy.archetype_prefix)
             if marker:
                 args['Marker'] = marker
             listing = self.s3.list_objects(**args)
@@ -248,6 +212,219 @@ class S3archivist(object):
                 marker = listing['NextMarker']
             else:
                 incomplete = False
+
+    def init_bucket(self):
+        "Initialize a bucket and create a cloudformation stack for it."
+        # To be absolutely certain that cloudformation will not delete customer
+        # data from the bucket, we leave the bucket out of the stack entirely,
+        # create it separately and pass it in as a parameter to the stack.
+
+        # Create bucket if necessary
+        s3 = self.s3
+        bucket = self.bucket
+        region = self.region
+        account = self.account
+        try:
+            s3.head_bucket(Bucket=bucket)
+            logger.info("Bucket already exists, modifying: %s" % bucket)
+        except Exception as e:
+            if "404" not in str(e):
+                raise
+            s3.create_bucket(
+                Bucket=bucket,
+                CreateBucketConfiguration={'LocationConstraint': self.region}
+            )
+            logger.info("Creating bucket: %s" % bucket)
+
+        # Use Cloudformation to create a "stack" that contains all the
+        # non-bucket resources the system needs. Stack creation happens in the
+        # background so we get it started early and then do the rest of our
+        # synchronous calls.
+        cf_file = pkg_resources.resource_filename('bluebucket.archivist',
+                                                  'cloudformation.json')
+        with open(cf_file, encoding="utf-8") as f:
+            stackdef = f.read()
+        # Calculate the stack name based on the bucket name
+        # starter = re.sub(r'[^A-Za-z0-9]+', '-', bucket.lower())
+        stack_name = "WebQuills" + ''.join(s.capitalize() for s in bucket.split('.'))
+
+        # Check if the stack already exists. If yes, maybe update needed.
+        cf = self.cloudformation or boto3.client('cloudformation',
+                                                 region_name=self.region)
+        try:
+            resp = cf.describe_stacks(StackName=stack_name)
+            stack_exists = len(resp['Stacks']) > 0
+        except Exception as e:
+            if "does not exist" not in str(e):
+                raise
+            stack_exists = False
+
+        if stack_exists:  # exists, update
+            logger.info("Updating cloudformation stack: %s" % stack_name)
+            try:
+                cf.update_stack(StackName=stack_name,
+                                TemplateBody=stackdef,
+                                Capabilities=['CAPABILITY_IAM'],
+                                Parameters=[
+                                    {
+                                        "ParameterKey": "BucketNameParameter",
+                                        "ParameterValue": bucket,
+                                    },
+                                    {
+                                        "ParameterKey": "BucketArnParameter",
+                                        "ParameterValue": "arn:aws:s3:::" + bucket,
+                                    }
+                                ]
+                                )
+                waiter = cf.get_waiter("stack_update_complete")
+            except Exception as e:
+                if "No updates" not in str(e):
+                    raise
+                logger.info("No updates needed for: %s" % stack_name)
+                waiter = cf.get_waiter("stack_exists")
+
+        else:  # Stack does not exist. Create
+            logger.info("Creating cloudformation stack: %s" % stack_name)
+            cf.create_stack(StackName=stack_name,
+                            TemplateBody=stackdef,
+                            Capabilities=['CAPABILITY_IAM'],
+                            Parameters=[
+                                {
+                                    "ParameterKey": "BucketNameParameter",
+                                    "ParameterValue": bucket,
+                                },
+                                {
+                                    "ParameterKey": "BucketArnParameter",
+                                    "ParameterValue": "arn:aws:s3:::" + bucket,
+                                }
+                            ]
+                            )
+            waiter = cf.get_waiter("stack_create_complete")
+
+        # Bucket should exist now. Paint it Blue!
+        logger.info("Enabling versioning for bucket: %s" % bucket)
+        s3.put_bucket_versioning(
+            Bucket=bucket,
+            VersioningConfiguration={
+                'MFADelete': 'Disabled',
+                'Status': 'Enabled'
+            }
+        )
+        logger.info("Enabling website serving for bucket: %s" % bucket)
+        s3.put_bucket_website(
+            Bucket=bucket,
+            WebsiteConfiguration={
+                'IndexDocument': {
+                    'Suffix': 'index.html'
+                }
+            }
+        )
+
+        # PUT site.json
+        # TODO check for existing config, don't overwrite. Or maybe update?
+        logger.info("Writing site config to bucket: %s" % bucket)
+        site_config_key = self.pathstrategy.path_for(resourcetype='config',
+                                                     key='site.json')
+        site_config = self.new_resource(resourcetype='config',
+                                        key=site_config_key,
+                                        contenttype='application/json',
+                                        data=self.siteconfig
+                                        )
+        self.publish(site_config)
+
+        # TODO PUT Schema files
+
+        # Cannot configure notifications until the destinations have been
+        # created by cloudformation.
+        logger.info("Waiting for cloudformation stack: %s" % stack_name)
+        waiter.wait(StackName=stack_name)
+
+        # Configure Event Sources to send to SNS Topics for this bucket.
+        # For this, I need the ARNs for the topics in question. Sigh. Since topic
+        # ARNs have a consistent naming pattern, I'm hard coding this. But we need a
+        # more generic way to connect these.
+        logger.info("Adding S3 notifications to SNS for: %s" % bucket)
+        arn_pattern = ":".join(["arn:aws:sns", region, account, stack_name])
+        topic_save_source_markdown = arn_pattern + "-on-save-source-text-markdown"
+        topic_remove_source_markdown = arn_pattern + "-on-remove-source-text-markdown"
+        topic_save_article = arn_pattern + "-on-save-item-page-article"
+        topic_remove_article = arn_pattern + "-on-remove-item-page-article"
+        topic_save_catalog = arn_pattern + "-on-save-item-page-catalog"
+        topic_remove_catalog = arn_pattern + "-on-remove-item-page-catalog"
+
+        s3.put_bucket_notification_configuration(
+            Bucket=bucket,
+            NotificationConfiguration={
+                "TopicConfigurations": [
+                    {
+                        "Id": "webquills-on-save-source-text-markdown",
+                        "TopicArn": topic_save_source_markdown,
+                        "Events": ["s3:ObjectCreated:*"],
+                        "Filter": {
+                            "Key": {
+                                "FilterRules": [{"Name": "prefix", "Value":
+                                                "_A/Source/text/markdown/"}]
+                            }
+                        }
+                    },
+                    {
+                        "Id": "webquills-on-remove-source-text-markdown",
+                        "TopicArn": topic_remove_source_markdown,
+                        "Events": ["s3:ObjectRemoved:DeleteMarkerCreated"],
+                        "Filter": {
+                            "Key": {
+                                "FilterRules": [{"Name": "prefix", "Value":
+                                                "_A/Source/text/markdown/"}]
+                            }
+                        }
+                    },
+                    {
+                        "Id": "webquills-on-save-item-page-article",
+                        "TopicArn": topic_save_article,
+                        "Events": ["s3:ObjectCreated:*"],
+                        "Filter": {
+                            "Key": {
+                                "FilterRules": [{"Name": "prefix", "Value":
+                                                "_A/Item/Page/Article/"}]
+                            }
+                        }
+                    },
+                    {
+                        "Id": "webquills-on-remove-item-page-article",
+                        "TopicArn": topic_remove_article,
+                        "Events": ["s3:ObjectRemoved:DeleteMarkerCreated"],
+                        "Filter": {
+                            "Key": {
+                                "FilterRules": [{"Name": "prefix", "Value":
+                                                "_A/Item/Page/Article/"}]
+                            }
+                        }
+                    },
+                    {
+                        "Id": "webquills-on-save-item-page-catalog",
+                        "TopicArn": topic_save_catalog,
+                        "Events": ["s3:ObjectCreated:*"],
+                        "Filter": {
+                            "Key": {
+                                "FilterRules": [{"Name": "prefix", "Value":
+                                                "_A/Item/Page/Catalog/"}]
+                            }
+                        }
+                    },
+                    {
+                        "Id": "webquills-on-remove-item-page-catalog",
+                        "TopicArn": topic_remove_catalog,
+                        "Events": ["s3:ObjectRemoved:DeleteMarkerCreated"],
+                        "Filter": {
+                            "Key": {
+                                "FilterRules": [{"Name": "prefix", "Value":
+                                                "_A/Item/Page/Catalog/"}]
+                            }
+                        }
+                    }
+                ]
+            }
+        )
 
 
 #######################################################################

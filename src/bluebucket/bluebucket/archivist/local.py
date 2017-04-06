@@ -18,24 +18,15 @@ from __future__ import absolute_import, print_function, unicode_literals
 import errno
 import json
 import logging
-from bluebucket.pathstrategy import DefaultPathStrategy
+from bluebucket.archivist.base import Archivist
 from bluebucket.archivist.s3 import S3resource
-from pytz import timezone
+from bluebucket.pathstrategy import DefaultPathStrategy
 from io import open
 import os
 import os.path as path
 
 
 logger = logging.getLogger(__name__)
-
-
-def inflate_config(config):
-    """Takes a bare decoded JSON dict and creates Python objects from certain
-    keys"""
-    tz = config.get('timezone', 'America/New_York')
-    config['timezone'] = tz if hasattr(tz, 'utcoffset') else timezone(tz)
-    # Your transformation here
-    return config
 
 
 #######################################################################
@@ -53,15 +44,13 @@ class localresource(S3resource):
 #######################################################################
 # Note that for testing purposes, you can pass both the s3 object and the jinja
 # object to the constructor.
-class localarchivist(object):
+class localarchivist(Archivist):
 
     def __init__(self, bucket, **kwargs):
         self.bucket = bucket
-        self.archetype_prefix = '_A/'
-        self.index_prefix = '_I/'
         self.meta_prefix = '.meta/'
         self.siteconfig = None
-        self.pathstrategy = DefaultPathStrategy()
+        self.pathstrategy = None
         self._jinja = None  # See jinja property below
         for key in kwargs:
             if key == 'jinja':
@@ -69,9 +58,12 @@ class localarchivist(object):
             else:
                 setattr(self, key, kwargs[key])
 
+        if self.pathstrategy is None:
+            self.pathstrategy = DefaultPathStrategy()
+
         if self.siteconfig is None:
-            cfg_path = self.archetype_prefix + 'site.json'
-            self.siteconfig = inflate_config(self.get(cfg_path).data)
+            cfg_path = self.pathstrategy.archetype_prefix + 'site.json'
+            self.siteconfig = self.get(cfg_path).data
 
     def _write_resource(self, resource):
         # Special, writes the s3obj in a meta place, then writes the content
@@ -189,3 +181,18 @@ class localarchivist(object):
             for filename in filenames:
                 yield self.get(path.join(dirpath, filename))
 
+    def init_bucket(self):
+        try:
+            os.makedirs(self.bucket)
+        except OSError, e:  # be happy if someone already created the path
+            if e.errno != errno.EEXIST:
+                raise
+        logger.info("Writing site config to bucket: %s" % self.bucket)
+        site_config_key = self.pathstrategy.path_for(resourcetype='config',
+                                                     key='site.json')
+        site_config = self.new_resource(resourcetype='config',
+                                        key=site_config_key,
+                                        contenttype='application/json',
+                                        data=self.siteconfig
+                                        )
+        self.publish(site_config)
